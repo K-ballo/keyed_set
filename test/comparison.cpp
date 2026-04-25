@@ -1,0 +1,66 @@
+// Copyright Agustin K-ballo Berge, Fusion Fenix 2026
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#include <eggs/keyed_set.hpp>
+
+#include <catch.hpp>
+
+#include "fixture.hpp"
+
+#include <compare>
+
+using M = eggs::keyed_set<test::Employee, &test::Employee::id>;
+
+TEST_CASE("operator== — equal containers", "[keyed_set.cmp]")
+{
+    M a{{1, "Alice"}, {2, "Bob"}};
+    M b{{1, "Alice"}, {2, "Bob"}};
+    CHECK(a == b);
+}
+
+TEST_CASE("operator== — different size", "[keyed_set.cmp]")
+{
+    M a{{1, "Alice"}};
+    M b{{1, "Alice"}, {2, "Bob"}};
+    CHECK(!(a == b));
+}
+
+TEST_CASE("operator== — same size, different elements", "[keyed_set.cmp]")
+{
+    M a{{1, "Alice"}};
+    M b{{2, "Bob"}};
+    CHECK(!(a == b));
+}
+
+TEST_CASE("operator<=> — less than", "[keyed_set.cmp]")
+{
+    M a{{1, "Alice"}};
+    M b{{2, "Bob"}};
+    // Avoid passing std::strong_ordering directly to Catch's expression
+    // decomposer: MSVC's strong_ordering comparison against int uses a
+    // consteval constructor that Catch2 v2 cannot handle.
+    CHECK(std::is_lt(a <=> b));
+    CHECK(std::is_gt(b <=> a));
+}
+
+TEST_CASE("operator<=> — equal", "[keyed_set.cmp]")
+{
+    M a{{1, "Alice"}};
+    M b{{1, "Alice"}};
+    CHECK(std::is_eq(a <=> b));
+}
+
+TEST_CASE("operator<= / >= / < / > — synthesised from <=>", "[keyed_set.cmp]")
+{
+    M a{{1, "A"}};
+    M b{{2, "B"}};
+
+    CHECK(a < b);
+    CHECK(a <= b);
+    CHECK(b > a);
+    CHECK(b >= a);
+    CHECK(!(a > b));
+    CHECK(!(b < a));
+}
