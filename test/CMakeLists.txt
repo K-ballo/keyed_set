@@ -6,15 +6,30 @@
 # ── Vendored Catch2 v2 single-header ────────────────────────────────────────
 
 add_library(_catch2 INTERFACE)
-target_include_directories(_catch2 INTERFACE
+target_include_directories(_catch2 SYSTEM INTERFACE
     "${CMAKE_CURRENT_SOURCE_DIR}/catch")
 target_compile_definitions(_catch2 INTERFACE
     CATCH_CONFIG_FAST_COMPILE)   # cuts per-TU overhead in v2
 
-# ── Test executable ──────────────────────────────────────────────────────────
+# ── Shared test main (compiled once, linked into every test executable) ──────
+
+add_library(_eggs_keyed_set_test_main OBJECT
+    main.cpp)
+target_link_libraries(_eggs_keyed_set_test_main
+    PUBLIC
+        Eggs::KeyedSet
+        _catch2)
+set_target_properties(_eggs_keyed_set_test_main
+    PROPERTIES
+        FOLDER "test"
+        CXX_STANDARD 23
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
+        CXX_SCAN_FOR_MODULES OFF)
+
+# ── One executable + one CTest per test source ───────────────────────────────
 
 set(_test_sources
-    main.cpp
     types.cpp
     cnstr.default.cpp
     cnstr.compare.cpp
@@ -43,17 +58,23 @@ set(_test_sources
     comparison.cpp
 )
 
-add_executable(_eggs_keyed_set_test ${_test_sources})
-target_link_libraries(_eggs_keyed_set_test
-    PRIVATE
-        Eggs::KeyedSet
-        _catch2)
-target_compile_features(_eggs_keyed_set_test PRIVATE cxx_std_23)
-set_target_properties(_eggs_keyed_set_test
-    PROPERTIES
-        FOLDER "test"
-        CXX_EXTENSIONS OFF)
+foreach(_src IN LISTS _test_sources)
+    # Derive a target name from the filename: e.g. cnstr.default.cpp -> cnstr.default
+    get_filename_component(_name "${_src}" NAME_WLE)
+    set(_target "_eggs_keyed_set_test.${_name}")
 
-add_test(
-    NAME keyed_set
-    COMMAND _eggs_keyed_set_test)
+    add_executable(${_target} "${_src}")
+    target_link_libraries(${_target}
+        PRIVATE _eggs_keyed_set_test_main)
+    set_target_properties(${_target}
+        PROPERTIES
+            FOLDER "test"
+            CXX_STANDARD 23
+            CXX_STANDARD_REQUIRED ON
+            CXX_EXTENSIONS OFF
+            CXX_SCAN_FOR_MODULES OFF)
+
+    add_test(
+        NAME "keyed_set.${_name}"
+        COMMAND ${_target})
+endforeach()

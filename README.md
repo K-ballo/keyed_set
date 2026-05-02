@@ -81,7 +81,7 @@ target_link_libraries(my_target PRIVATE Eggs::KeyedSet)
 
 | Option (top-level) | Option (subdirectory) | Default | Description |
 |---|---|---|---|
-| `BUILD_TESTING` | `EGGS_KEYED_SET_BUILD_TESTING` | `OFF` | Build the test suite |
+| `BUILD_TESTING` | `EGGS_KEYED_SET_BUILD_TESTING` | `ON` / `OFF` | Build the test suite |
 | `BUILD_EXAMPLE` | `EGGS_KEYED_SET_BUILD_EXAMPLE` | `ON` / `OFF` | Build the example |
 | `ENABLE_INSTALL` | `EGGS_KEYED_SET_ENABLE_INSTALL` | `ON` / `OFF` | Install the library |
 
