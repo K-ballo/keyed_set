@@ -43,31 +43,66 @@ namespace eggs
         ///////////////////////////////////////////////////////////////////////
         //! \struct comparator
         //!
-        //! Transparent strict-weak-ordering comparator that projects a
-        //! `Value` to a key via a pointer-to-member `Key`, and supports
-        //! heterogeneous lookup by accepting `key_type` directly.
-        //!
-        //! The `is_transparent` typedef opts this comparator in to the
-        //! heterogeneous overloads of `std::set::find`, `count`, `contains`,
-        //! `lower_bound`, `upper_bound`, `equal_range`, `extract`, and
-        //! `erase` ([associative.reqmts.general]/p7.8).
-        template <typename Value, auto Key>
-        struct comparator
+        //! Projecting comparator adaptor. Wraps a user-supplied `Compare`
+        //! and applies it to `v.*Key` rather than directly to `Value`.
+        template <typename Value, auto Key, typename Compare>
+        struct comparator : Compare  // EBO
         {
-            using key_type       = typename member_key_type<Value, Key>::type;
+            using key_type = typename member_key_type<Value, Key>::type;
+
+            // Always defined so that std::set activates its heterogeneous
+            // tree operations (_M_find_tr etc.), which we need because our
+            // key_type differs from Value. The actual type does not matter;
+            // void is the conventional sentinel.
             using is_transparent = void;
 
-            constexpr bool operator()(Value const& a,    Value const& b)    const
-                noexcept(noexcept(a.*Key < b.*Key))
-            { return a.*Key < b.*Key; }
+            comparator() = default;
 
-            constexpr bool operator()(key_type const& k, Value const& b)    const
-                noexcept(noexcept(k < b.*Key))
-            { return k < b.*Key; }
+            explicit comparator(Compare const& c)
+                : Compare(c)
+            {}
 
-            constexpr bool operator()(Value const& a,    key_type const& k) const
-                noexcept(noexcept(a.*Key < k))
-            { return a.*Key < k; }
+            explicit comparator(Compare&& c)
+                : Compare(std::move(c))
+            {}
+
+            Compare const& key_comp() const noexcept
+            {
+                return static_cast<Compare const&>(*this);
+            }
+
+            // Value vs Value
+            constexpr bool operator()(Value const& a, Value const& b) const
+                noexcept(noexcept(key_comp()(a.*Key, b.*Key)))
+            { return key_comp()(a.*Key, b.*Key); }
+
+            // key_type vs Value  (always available)
+            constexpr bool operator()(key_type const& k, Value const& b) const
+                noexcept(noexcept(key_comp()(k, b.*Key)))
+            { return key_comp()(k, b.*Key); }
+
+            // Value vs key_type  (always available)
+            constexpr bool operator()(Value const& a, key_type const& k) const
+                noexcept(noexcept(key_comp()(a.*Key, k)))
+            { return key_comp()(a.*Key, k); }
+
+            // Transparent heterogeneous overloads — only available when
+            // Compare::is_transparent is defined (SFINAE via the using above).
+            template <typename K>
+            constexpr bool operator()(K const& k, Value const& b) const
+                noexcept(noexcept(key_comp()(k, b.*Key)))
+            { return key_comp()(k, b.*Key); }
+
+            template <typename K>
+            constexpr bool operator()(Value const& a, K const& k) const
+                noexcept(noexcept(key_comp()(a.*Key, k)))
+            { return key_comp()(a.*Key, k); }
+
+            // key_type vs key_type  — forwarded directly to Compare, so
+            // std::set can compare extracted keys during rebalancing.
+            constexpr bool operator()(key_type const& a, key_type const& b) const
+                noexcept(noexcept(key_comp()(a, b)))
+            { return key_comp()(a, b); }
         };
 
     } // namespace keyed_set_detail
@@ -82,9 +117,11 @@ namespace eggs
     //! \tparam Value  The element type. Must be *Cpp17Erasable* from the
     //!                container and satisfy the requirements of the
     //!                underlying `std::set`.
-    //! \tparam Key    A pointer-to-member of `Value` whose pointee type
-    //!                becomes `key_type`. The member's `operator<` is used
-    //!                to impose the strict weak ordering.
+    //! \tparam Key     A pointer-to-member of `Value` whose pointee type
+    //!                 becomes `key_type`.
+    //! \tparam Compare A strict-weak-ordering binary predicate on `key_type`.
+    //!                 Defaults to `std::less<key_type>`. If `Compare` defines
+    //!                 `is_transparent`, heterogeneous lookup is enabled.
     //!
     //! ### Example
     //! \code
@@ -97,10 +134,11 @@ namespace eggs
     //! auto it = by_id.find(42);          // heterogeneous lookup by int
     //! assert(it->name == "Alice");
     //! \endcode
-    template <typename Value, auto Key>
+    template <typename Value, auto Key,
+              typename Compare = std::less<typename keyed_set_detail::member_key_type<Value, Key>::type>>
     class keyed_set
     {
-        using _comparator = keyed_set_detail::comparator<Value, Key>;
+        using _comparator = keyed_set_detail::comparator<Value, Key, Compare>;
         using _set_type   = std::set<Value, _comparator>;
 
     public:
@@ -114,6 +152,9 @@ namespace eggs
         //! `key_type`, `value_compare` is the same type as `key_compare`
         //! ([associative.reqmts.general]/p16).
         using value_compare   = _comparator;
+
+        //! The underlying comparison object supplied by the user.
+        using compare_type    = Compare;
 
         using allocator_type  = typename _set_type::allocator_type;
         using pointer         = typename _set_type::pointer;
@@ -152,6 +193,13 @@ namespace eggs
         explicit keyed_set(key_compare const& c,
                            allocator_type const& a = allocator_type{})
             : set_(c, a)
+        {}
+
+        //! Constructs an empty container using `c` as the underlying
+        //! `Compare` object (convenience overload).
+        explicit keyed_set(Compare const& c,
+                           allocator_type const& a = allocator_type{})
+            : set_(key_compare{c}, a)
         {}
 
         //! Constructs an empty container using the given allocator.
@@ -381,7 +429,8 @@ namespace eggs
         //! convertible to `iterator` or `const_iterator`, per the standard.
         //! Requires P2077R3 (libstdc++ >= 14).
         template <typename K>
-            requires (!std::is_convertible_v<K&&, iterator> &&
+            requires (requires { typename Compare::is_transparent; } &&
+                      !std::is_convertible_v<K&&, iterator> &&
                       !std::is_convertible_v<K&&, const_iterator>)
         node_type extract(K&& kx)
         {
@@ -408,7 +457,8 @@ namespace eggs
         //! ([associative.reqmts.general]/p122-125).
         //! Requires P2077R3 (libstdc++ >= 14).
         template <typename K>
-            requires (!std::is_convertible_v<K&&, iterator> &&
+            requires (requires { typename Compare::is_transparent; } &&
+                      !std::is_convertible_v<K&&, iterator> &&
                       !std::is_convertible_v<K&&, const_iterator>)
         size_type erase(K&& kx)
         {
@@ -466,6 +516,12 @@ namespace eggs
             return set_.key_comp();
         }
 
+        //! Returns the underlying `Compare` object.
+        compare_type compare() const
+        {
+            return set_.key_comp().key_comp();
+        }
+
         // ── Lookup ───────────────────────────────────────────────────────────
 
         const_iterator find(key_type const& k) const
@@ -499,6 +555,7 @@ namespace eggs
 
         //! Transparent contains ([associative.reqmts.general]/p155-156).
         template <typename K>
+            requires requires { typename Compare::is_transparent; }
         bool contains(K const& k) const
         {
             return set_.contains(k);
@@ -511,6 +568,7 @@ namespace eggs
 
         //! Transparent lower_bound ([associative.reqmts.general]/p160-162).
         template <typename K>
+            requires requires { typename Compare::is_transparent; }
         const_iterator lower_bound(K const& k) const
         {
             return set_.lower_bound(k);
@@ -523,6 +581,7 @@ namespace eggs
 
         //! Transparent upper_bound ([associative.reqmts.general]/p166-168).
         template <typename K>
+            requires requires { typename Compare::is_transparent; }
         const_iterator upper_bound(K const& k) const
         {
             return set_.upper_bound(k);
@@ -535,6 +594,7 @@ namespace eggs
 
         //! Transparent equal_range.
         template <typename K>
+            requires requires { typename Compare::is_transparent; }
         std::pair<const_iterator, const_iterator> equal_range(K const& k) const
         {
             return set_.equal_range(k);

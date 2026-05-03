@@ -1,0 +1,137 @@
+// Copyright Agustin K-ballo Berge, Fusion Fenix 2026
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#include <eggs/keyed_set.hpp>
+
+#include <catch.hpp>
+
+#include "fixture.hpp"
+
+#include <functional>
+#include <string>
+#include <type_traits>
+
+// ── Default Compare = std::less<key_type> ───────────────────────────────────
+
+using Asc = eggs::keyed_set<test::Employee, &test::Employee::id>;
+
+TEST_CASE("keyed_set — default Compare is std::less<key_type>", "[keyed_set.compare]")
+{
+    static_assert(std::is_same_v<
+        Asc::compare_type,
+        std::less<int>>);
+}
+
+TEST_CASE("keyed_set — default Compare iterates in ascending order", "[keyed_set.compare]")
+{
+    Asc m{{3, "C"}, {1, "A"}, {2, "B"}};
+
+    int prev = -1;
+    for (auto const& e : m)
+    {
+        CHECK(e.id > prev);
+        prev = e.id;
+    }
+}
+
+// ── Custom Compare = std::greater<key_type> ──────────────────────────────────
+
+using Desc = eggs::keyed_set<test::Employee, &test::Employee::id, std::greater<int>>;
+
+TEST_CASE("keyed_set — std::greater<> yields descending order", "[keyed_set.compare]")
+{
+    Desc m{{3, "C"}, {1, "A"}, {2, "B"}};
+
+    int prev = std::numeric_limits<int>::max();
+    for (auto const& e : m)
+    {
+        CHECK(e.id < prev);
+        prev = e.id;
+    }
+}
+
+TEST_CASE("keyed_set — std::greater<> find by key_type", "[keyed_set.compare]")
+{
+    Desc m{{1, "Alice"}, {2, "Bob"}, {3, "Carol"}};
+
+    auto it = m.find(2);
+    REQUIRE(it != m.end());
+    CHECK(it->name == "Bob");
+}
+
+TEST_CASE("keyed_set — std::greater<> lower_bound / upper_bound are reversed",
+          "[keyed_set.compare]")
+{
+    Desc m{{1, "A"}, {2, "B"}, {3, "C"}};
+
+    // With greater<>, lower_bound(2) finds first element not greater-than 2,
+    // i.e. the first element <= 2 in descending order: that's 2 itself.
+    auto lo = m.lower_bound(2);
+    REQUIRE(lo != m.end());
+    CHECK(lo->id == 2);
+
+    // upper_bound(2) finds first element greater-than(2) in the greater<> sense,
+    // i.e. the first element < 2: that's 1.
+    auto hi = m.upper_bound(2);
+    REQUIRE(hi != m.end());
+    CHECK(hi->id == 1);
+}
+
+// ── Transparent Compare ───────────────────────────────────────────────────────
+
+TEST_CASE("keyed_set — std::less<> (non-transparent) has is_transparent = void",
+          "[keyed_set.compare]")
+{
+    // Our comparator always defines is_transparent so std::set can do
+    // heterogeneous lookup by key_type, regardless of Compare.
+    static_assert(requires { typename Asc::key_compare::is_transparent; });
+}
+
+TEST_CASE("keyed_set — std::less<void> (transparent) propagates is_transparent",
+          "[keyed_set.compare]")
+{
+    using Trans = eggs::keyed_set<test::Employee, &test::Employee::id, std::less<>>;
+    static_assert(requires { typename Trans::key_compare::is_transparent; });
+    static_assert(requires { typename Trans::compare_type::is_transparent; });
+}
+
+// ── compare() observer ───────────────────────────────────────────────────────
+
+TEST_CASE("keyed_set — compare() returns the underlying Compare object",
+          "[keyed_set.compare]")
+{
+    Desc m;
+    auto cmp = m.compare();
+    static_assert(std::is_same_v<decltype(cmp), std::greater<int>>);
+    CHECK(cmp(3, 2));   // 3 > 2
+    CHECK(!cmp(2, 3));
+}
+
+// ── String key with custom comparator ────────────────────────────────────────
+
+TEST_CASE("keyed_set — string key with case-insensitive comparator",
+          "[keyed_set.compare]")
+{
+    struct ILess {
+        using is_transparent = void;
+        bool operator()(std::string const& a, std::string const& b) const
+        {
+            return std::lexicographical_compare(
+                a.begin(), a.end(), b.begin(), b.end(),
+                [](char x, char y){ return std::tolower(x) < std::tolower(y); });
+        }
+    };
+
+    using CISet = eggs::keyed_set<test::Widget, &test::Widget::code, ILess>;
+
+    CISet m;
+    m.insert({"SKU-A", 1.0});
+    m.insert({"sku-b", 2.0});
+
+    // Case-insensitive find
+    CHECK(m.contains("SKU-A"));
+    CHECK(m.contains("sku-a"));   // same key under ILess
+    CHECK(m.size() == 2u);
+}

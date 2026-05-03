@@ -144,5 +144,22 @@ int main()
         assert(team_b.size() == 1 && team_b.contains(1));
     }
 
+    // ── Custom comparator: descending order ──────────────────────────────────
+    {
+        eggs::keyed_set<Employee, &Employee::id, std::greater<int>> desc;
+
+        desc.insert({1, "Alice",  95'000.0});
+        desc.insert({2, "Bob",    80'000.0});
+        desc.insert({3, "Carol", 110'000.0});
+
+        // Iteration is in descending key order
+        std::cout << "Roster (descending id):\n";
+        for (auto const& e : desc)
+            std::cout << "  " << e.id << "  " << e.name << '\n';
+
+        assert(desc.find(2)->name == "Bob");
+        assert(desc.compare()(3, 2));  // 3 > 2
+    }
+
     std::cout << "All assertions passed.\n";
 }
