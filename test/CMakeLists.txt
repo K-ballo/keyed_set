@@ -55,6 +55,7 @@ set(_test_sources
     lookup.equal_range.cpp
     observers.cpp
     compare.cpp
+    allocator.cpp
     swap.cpp
     comparison.cpp
 )

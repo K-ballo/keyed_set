@@ -119,9 +119,9 @@ namespace eggs
     //!                underlying `std::set`.
     //! \tparam Key     A pointer-to-member of `Value` whose pointee type
     //!                 becomes `key_type`.
-    //! \tparam Compare A strict-weak-ordering binary predicate on `key_type`.
-    //!                 Defaults to `std::less<key_type>`. If `Compare` defines
-    //!                 `is_transparent`, heterogeneous lookup is enabled.
+    //! \tparam Compare    A strict-weak-ordering binary predicate on `key_type`.
+    //!                    Defaults to `std::less<key_type>`.
+    //! \tparam Allocator  Allocator for `Value`. Defaults to `std::allocator<Value>`.
     //!
     //! ### Example
     //! \code
@@ -135,11 +135,12 @@ namespace eggs
     //! assert(it->name == "Alice");
     //! \endcode
     template <typename Value, auto Key,
-              typename Compare = std::less<typename keyed_set_detail::member_key_type<Value, Key>::type>>
+              typename Compare   = std::less<typename keyed_set_detail::member_key_type<Value, Key>::type>,
+              typename Allocator = std::allocator<Value>>
     class keyed_set
     {
         using _comparator = keyed_set_detail::comparator<Value, Key, Compare>;
-        using _set_type   = std::set<Value, _comparator>;
+        using _set_type   = std::set<Value, _comparator, Allocator>;
 
     public:
         // ── Required type members [associative.reqmts.general] ───────────────
