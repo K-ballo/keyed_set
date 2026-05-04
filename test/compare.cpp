@@ -10,6 +10,7 @@
 #include "fixture.hpp"
 
 #include <functional>
+#include <limits>
 #include <string>
 #include <type_traits>
 
@@ -134,4 +135,118 @@ TEST_CASE("keyed_set — string key with case-insensitive comparator",
     CHECK(m.contains("SKU-A"));
     CHECK(m.contains("sku-a"));   // same key under ILess
     CHECK(m.size() == 2u);
+}
+
+// ── Stateful comparator ───────────────────────────────────────────────────────
+
+TEST_CASE("keyed_set — stateful comparator is stored and accessible",
+          "[keyed_set.compare]")
+{
+    struct ThresholdLess
+    {
+        int threshold;
+        explicit ThresholdLess(int t) : threshold(t) {}
+        bool operator()(int a, int b) const { return a < b; }
+    };
+
+    using TM = eggs::keyed_set<test::Employee, &test::Employee::id, ThresholdLess>;
+
+    ThresholdLess cmp(42);
+    TM m(cmp);
+
+    m.insert({1, "Alice"});
+    m.insert({2, "Bob"});
+
+    CHECK(m.compare().threshold == 42);
+    CHECK(m.size() == 2u);
+}
+
+TEST_CASE("keyed_set — stateful comparator is copied with the container",
+          "[keyed_set.compare]")
+{
+    struct TaggedLess
+    {
+        int tag;
+        explicit TaggedLess(int t) : tag(t) {}
+        bool operator()(int a, int b) const { return a < b; }
+    };
+
+    using TM = eggs::keyed_set<test::Employee, &test::Employee::id, TaggedLess>;
+
+    TM src(TaggedLess{99});
+    src.insert({1, "Alice"});
+
+    TM copy(src);
+    CHECK(copy.compare().tag == 99);
+    CHECK(copy.size() == 1u);
+}
+
+TEST_CASE("keyed_set — stateful comparator is moved with the container",
+          "[keyed_set.compare]")
+{
+    struct TaggedLess
+    {
+        int tag;
+        explicit TaggedLess(int t) : tag(t) {}
+        bool operator()(int a, int b) const { return a < b; }
+    };
+
+    using TM = eggs::keyed_set<test::Employee, &test::Employee::id, TaggedLess>;
+
+    TM src(TaggedLess{77});
+    src.insert({1, "Alice"});
+
+    TM moved(std::move(src));
+    CHECK(moved.compare().tag == 77);
+    CHECK(moved.size() == 1u);
+}
+
+// ── Compare + Allocator combination ──────────────────────────────────────────
+
+// Counting allocator defined at namespace scope so it can have a converting
+// constructor template (local structs cannot have template members).
+template <typename T>
+struct compare_test_alloc
+{
+    using value_type = T;
+    int* count;
+    explicit compare_test_alloc(int& c) : count(&c) {}
+    template <typename U>
+    compare_test_alloc(compare_test_alloc<U> const& o) noexcept : count(o.count) {}
+    T* allocate(std::size_t n)
+    { ++(*count); return std::allocator<T>{}.allocate(n); }
+    void deallocate(T* p, std::size_t n) noexcept
+    { std::allocator<T>{}.deallocate(p, n); }
+    friend bool operator==(compare_test_alloc const& a,
+                           compare_test_alloc const& b) noexcept
+    { return a.count == b.count; }
+};
+
+using CA = eggs::keyed_set<test::Employee, &test::Employee::id,
+                           std::greater<int>,
+                           compare_test_alloc<test::Employee>>;
+
+TEST_CASE("keyed_set — custom Compare and custom Allocator together",
+          "[keyed_set.compare]")
+{
+    static_assert(std::is_same_v<CA::compare_type, std::greater<int>>);
+    static_assert(std::is_same_v<CA::allocator_type,
+                                 compare_test_alloc<test::Employee>>);
+
+    int alloc_count = 0;
+    CA m(std::greater<int>{}, compare_test_alloc<test::Employee>{alloc_count});
+    m.insert({3, "Carol"});
+    m.insert({1, "Alice"});
+    m.insert({2, "Bob"});
+
+    // Ordering is descending (greater<>)
+    int prev = std::numeric_limits<int>::max();
+    for (auto const& e : m)
+    {
+        CHECK(e.id < prev);
+        prev = e.id;
+    }
+
+    // Custom allocator was actually used
+    CHECK(alloc_count >= 3);
 }

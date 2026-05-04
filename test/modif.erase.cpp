@@ -32,6 +32,17 @@ TEST_CASE("erase(key_type const&) — missing key returns 0", "[keyed_set.modif]
     CHECK(m.size() == 1u);
 }
 
+TEST_CASE("erase(key_type const&) — erase only element leaves empty container",
+          "[keyed_set.modif]")
+{
+    M m{{1, "Alice"}};
+
+    auto n = m.erase(1);
+
+    CHECK(n == 1u);
+    CHECK(m.empty());
+}
+
 TEST_CASE("erase(const_iterator) — removes by iterator, returns next", "[keyed_set.modif]")
 {
     M m{{1, "Alice"}, {2, "Bob"}, {3, "Carol"}};
@@ -44,7 +55,43 @@ TEST_CASE("erase(const_iterator) — removes by iterator, returns next", "[keyed
     CHECK(!m.contains(2));
 }
 
-TEST_CASE("erase(const_iterator, const_iterator) — range erase", "[keyed_set.modif]")
+TEST_CASE("erase(const_iterator) — erase at begin() returns new begin()",
+          "[keyed_set.modif]")
+{
+    M m{{1, "Alice"}, {2, "Bob"}, {3, "Carol"}};
+
+    auto next = m.erase(m.begin());
+
+    CHECK(next == m.begin());
+    CHECK(next->id == 2);
+    CHECK(m.size() == 2u);
+}
+
+TEST_CASE("erase(const_iterator) — erase last element returns end()",
+          "[keyed_set.modif]")
+{
+    M m{{1, "Alice"}, {2, "Bob"}};
+
+    auto last = m.find(2);
+    auto next = m.erase(last);
+
+    CHECK(next == m.end());
+    CHECK(m.size() == 1u);
+}
+
+TEST_CASE("erase(const_iterator) — erase only element returns end()",
+          "[keyed_set.modif]")
+{
+    M m{{1, "Alice"}};
+
+    auto next = m.erase(m.begin());
+
+    CHECK(next == m.end());
+    CHECK(m.empty());
+}
+
+TEST_CASE("erase(q1, q2) — range erase returns iterator past erased range",
+          "[keyed_set.modif]")
 {
     M m{{1, "A"}, {2, "B"}, {3, "C"}, {4, "D"}};
 
@@ -60,11 +107,46 @@ TEST_CASE("erase(const_iterator, const_iterator) — range erase", "[keyed_set.m
     CHECK(!m.contains(3));
 }
 
+TEST_CASE("erase(q1, q2) — erase from begin() to end() clears container",
+          "[keyed_set.modif]")
+{
+    M m{{1, "A"}, {2, "B"}, {3, "C"}};
+
+    auto after = m.erase(m.begin(), m.end());
+
+    CHECK(after == m.end());
+    CHECK(m.empty());
+}
+
+TEST_CASE("erase(q1, q2) — erase empty range [p, p) is a no-op",
+          "[keyed_set.modif]")
+{
+    M m{{1, "A"}, {2, "B"}, {3, "C"}};
+
+    auto it    = m.find(2);
+    auto after = m.erase(it, it);  // empty range
+
+    CHECK(after->id == 2);         // returns the range start unchanged
+    CHECK(m.size() == 3u);
+}
+
+TEST_CASE("erase(q1, q2) — erase single-element range [p, next(p))",
+          "[keyed_set.modif]")
+{
+    M m{{1, "A"}, {2, "B"}, {3, "C"}};
+
+    auto it   = m.find(2);
+    auto next = std::next(it);
+    auto after = m.erase(it, next);
+
+    CHECK(after->id == 3);
+    CHECK(m.size() == 2u);
+    CHECK(!m.contains(2));
+}
+
 TEST_CASE("erase(K&&) — transparent erase", "[keyed_set.modif]")
 {
-    // The comparator is transparent so erase accepts any K comparable to key_type.
-    // Here we pass a long to erase from a map keyed by int.
-    eggs::keyed_set<test::Employee, &test::Employee::id> m{{1, "A"}, {2, "B"}};
+    M m{{1, "A"}, {2, "B"}};
 
     auto n = m.erase(static_cast<long>(1));
 

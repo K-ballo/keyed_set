@@ -64,3 +64,44 @@ TEST_CASE("operator<= / >= / < / > — synthesised from <=>", "[keyed_set.cmp]")
     CHECK(!(a > b));
     CHECK(!(b < a));
 }
+
+// ── Non-strong ordering ───────────────────────────────────────────────────────
+
+namespace
+{
+    // A key type whose operator<=> returns weak_ordering
+    struct Priority
+    {
+        int value;
+        // Intentionally weak: treat all negatives as equivalent
+        friend std::weak_ordering operator<=>(Priority const& a, Priority const& b)
+        {
+            bool a_neg = a.value < 0;
+            bool b_neg = b.value < 0;
+            if (a_neg && b_neg) return std::weak_ordering::equivalent;
+            return a.value <=> b.value;
+        }
+    };
+
+    struct Task { Priority priority; std::string name; };
+}
+
+TEST_CASE("operator<=> — weak_ordering key type yields weak_ordering result",
+          "[keyed_set.cmp]")
+{
+    // std::less on a weak_ordering type: need a comparator that uses <
+    struct PriorityLess {
+        bool operator()(Priority const& a, Priority const& b) const
+        { return std::is_lt(a <=> b); }
+    };
+
+    using TM = eggs::keyed_set<Task, &Task::priority, PriorityLess>;
+
+    TM a{{{1}, "high"}};
+    TM b{{{2}, "higher"}};
+    TM c{{{1}, "high"}};
+
+    CHECK(std::is_lt(a <=> b));
+    CHECK(std::is_gt(b <=> a));
+    CHECK(std::is_eq(a <=> c));
+}

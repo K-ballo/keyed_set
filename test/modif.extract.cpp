@@ -48,7 +48,7 @@ TEST_CASE("extract(const_iterator) — removes via iterator", "[keyed_set.modif]
     CHECK(m.size() == 1u);
 }
 
-TEST_CASE("extract / re-insert round-trip", "[keyed_set.modif]")
+TEST_CASE("extract / re-insert round-trip — success", "[keyed_set.modif]")
 {
     M src{{5, "Eve"}};
     auto nh = src.extract(5);
@@ -56,7 +56,60 @@ TEST_CASE("extract / re-insert round-trip", "[keyed_set.modif]")
 
     M dst;
     auto [pos, inserted, node] = dst.insert(std::move(nh));
+
     CHECK(inserted);
     CHECK(pos->id == 5);
+    CHECK(pos->name == "Eve");
     CHECK(dst.size() == 1u);
+    CHECK(node.empty());   // node handle consumed on success
+}
+
+TEST_CASE("extract / re-insert round-trip — duplicate key not inserted",
+          "[keyed_set.modif]")
+{
+    M src{{5, "Eve"}};
+    M dst{{5, "Existing"}};
+
+    auto nh = src.extract(5);
+    auto [pos, inserted, node] = dst.insert(std::move(nh));
+
+    CHECK(!inserted);
+    CHECK(pos->name == "Existing");  // existing element untouched
+    CHECK(!node.empty());            // node handle returned unconsumed
+    CHECK(node.value().id == 5);
+    CHECK(node.value().name == "Eve");
+    CHECK(dst.size() == 1u);
+}
+
+TEST_CASE("extract / re-insert with hint — success", "[keyed_set.modif]")
+{
+    M src{{3, "Carol"}};
+    M dst{{1, "Alice"}, {5, "Eve"}};
+
+    auto nh = src.extract(3);
+    // hint points past the correct insertion position
+    auto it = dst.insert(dst.find(5), std::move(nh));
+
+    CHECK(it->id == 3);
+    CHECK(dst.size() == 3u);
+    CHECK(dst.contains(3));
+}
+
+TEST_CASE("extract preserves element value through node handle", "[keyed_set.modif]")
+{
+    M m{{42, "Answer"}};
+    auto nh = m.extract(42);
+
+    // Value must be accessible and correct while in the node handle
+    REQUIRE(!nh.empty());
+    CHECK(nh.value().id == 42);
+    CHECK(nh.value().name == "Answer");
+
+    // Modify through the node handle before reinsertion
+    nh.value().name = "Modified";
+
+    M dst;
+    auto [pos, inserted, node] = dst.insert(std::move(nh));
+    CHECK(inserted);
+    CHECK(pos->name == "Modified");
 }
