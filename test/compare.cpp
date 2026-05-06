@@ -21,7 +21,7 @@ using Asc = eggs::keyed_set<test::Employee, &test::Employee::id>;
 TEST_CASE("keyed_set — default Compare is std::less<key_type>", "[keyed_set.compare]")
 {
     static_assert(std::is_same_v<
-        Asc::compare_type,
+        Asc::key_compare,
         std::less<int>>);
 }
 
@@ -82,29 +82,29 @@ TEST_CASE("keyed_set — std::greater<> lower_bound / upper_bound are reversed",
 
 // ── Transparent Compare ───────────────────────────────────────────────────────
 
-TEST_CASE("keyed_set — std::less<> (non-transparent) has is_transparent = void",
+TEST_CASE("keyed_set — std::less<int> (non-transparent) key_compare has no is_transparent",
           "[keyed_set.compare]")
 {
-    // Our comparator always defines is_transparent so std::set can do
-    // heterogeneous lookup by key_type, regardless of Compare.
-    static_assert(requires { typename Asc::key_compare::is_transparent; });
+    // key_compare is Compare itself; std::less<int> is not transparent.
+    static_assert(!test::transparent<Asc::key_compare>);
+    // value_compare (the projecting adaptor) always has is_transparent.
+    static_assert(test::transparent<Asc::value_compare>);
 }
 
 TEST_CASE("keyed_set — std::less<void> (transparent) propagates is_transparent",
           "[keyed_set.compare]")
 {
     using Trans = eggs::keyed_set<test::Employee, &test::Employee::id, std::less<>>;
-    static_assert(requires { typename Trans::key_compare::is_transparent; });
-    static_assert(requires { typename Trans::compare_type::is_transparent; });
+    static_assert(test::transparent<Trans::key_compare>);
 }
 
-// ── compare() observer ───────────────────────────────────────────────────────
+// ── key_comp() observer ──────────────────────────────────────────────────────
 
-TEST_CASE("keyed_set — compare() returns the underlying Compare object",
+TEST_CASE("keyed_set — key_comp() returns the Compare object",
           "[keyed_set.compare]")
 {
     Desc m;
-    auto cmp = m.compare();
+    auto cmp = m.key_comp();
     static_assert(std::is_same_v<decltype(cmp), std::greater<int>>);
     CHECK(cmp(3, 2));   // 3 > 2
     CHECK(!cmp(2, 3));
@@ -157,7 +157,7 @@ TEST_CASE("keyed_set — stateful comparator is stored and accessible",
     m.insert({1, "Alice"});
     m.insert({2, "Bob"});
 
-    CHECK(m.compare().threshold == 42);
+    CHECK(m.key_comp().threshold == 42);
     CHECK(m.size() == 2u);
 }
 
@@ -177,7 +177,7 @@ TEST_CASE("keyed_set — stateful comparator is copied with the container",
     src.insert({1, "Alice"});
 
     TM copy(src);
-    CHECK(copy.compare().tag == 99);
+    CHECK(copy.key_comp().tag == 99);
     CHECK(copy.size() == 1u);
 }
 
@@ -197,7 +197,7 @@ TEST_CASE("keyed_set — stateful comparator is moved with the container",
     src.insert({1, "Alice"});
 
     TM moved(std::move(src));
-    CHECK(moved.compare().tag == 77);
+    CHECK(moved.key_comp().tag == 77);
     CHECK(moved.size() == 1u);
 }
 
@@ -229,7 +229,7 @@ using CA = eggs::keyed_set<test::Employee, &test::Employee::id,
 TEST_CASE("keyed_set — custom Compare and custom Allocator together",
           "[keyed_set.compare]")
 {
-    static_assert(std::is_same_v<CA::compare_type, std::greater<int>>);
+    static_assert(std::is_same_v<CA::key_compare, std::greater<int>>);
     static_assert(std::is_same_v<CA::allocator_type,
                                  compare_test_alloc<test::Employee>>);
 

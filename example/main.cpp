@@ -158,7 +158,7 @@ int main()
             std::cout << "  " << e.id << "  " << e.name << '\n';
 
         assert(desc.find(2)->name == "Bob");
-        assert(desc.compare()(3, 2));  // 3 > 2
+        assert(desc.key_comp()(3, 2));  // 3 > 2
     }
 
     std::cout << "All assertions passed.\n";

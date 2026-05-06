@@ -11,6 +11,12 @@
 namespace test
 {
     ///////////////////////////////////////////////////////////////////////////
+    //! Concept that checks whether a type defines `is_transparent`.
+    //! Used in static_assert to avoid hard errors on non-dependent types.
+    template <typename T>
+    concept transparent = requires { typename T::is_transparent; };
+
+    ///////////////////////////////////////////////////////////////////////////
     struct Employee
     {
         int         id;

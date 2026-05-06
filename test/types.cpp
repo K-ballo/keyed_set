@@ -33,8 +33,10 @@ TEST_CASE("keyed_set — key_compare is CopyConstructible", "[keyed_set.types]")
 
 TEST_CASE("keyed_set — value_compare", "[keyed_set.types]")
 {
-    // For set-like containers value_compare == key_compare
-    static_assert(std::is_same_v<M::key_compare, M::value_compare>);
+    // key_compare is the user-supplied Compare;
+    // value_compare is the projecting adaptor — they are distinct.
+    static_assert(!std::is_same_v<M::key_compare, M::value_compare>);
+    static_assert(std::is_same_v<M::key_compare, std::less<int>>);
 }
 
 TEST_CASE("keyed_set — iterator is constant bidirectional", "[keyed_set.types]")
