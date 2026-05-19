@@ -614,27 +614,23 @@ namespace eggs
 
         friend bool operator==(keyed_set const& a, keyed_set const& b)
         {
-            if (a.size() != b.size())
-                return false;
-            return std::equal(a.begin(), a.end(), b.begin(),
-                [](value_type const& x, value_type const& y)
-                { return x.*Key == y.*Key; });
+            return a.set_ == b.set_;
         }
 
-        //! Lexicographic three-way comparison over the key projection.
+        //! Lexicographic three-way comparison.
         //! Synthesises all six relational operators (C++20).
         //!
         //! \note We cannot use `set_ <=> set_` directly: `std::set::operator<=>`
         //! uses `__synth3way` which requires `Value::operator<`, but `Value`
-        //! may only provide `operator<=>`. We compare key members directly,
-        //! which only requires `key_type::operator<=>`.
+        //! may only provide `operator<=>`. We use
+        //! `lexicographical_compare_three_way` with `Value::operator<=>`.
         friend auto operator<=>(keyed_set const& a, keyed_set const& b)
         {
             return std::lexicographical_compare_three_way(
                 a.begin(), a.end(),
                 b.begin(), b.end(),
                 [](value_type const& x, value_type const& y)
-                { return x.*Key <=> y.*Key; });
+                { return x <=> y; });
         }
 
         // ── Non-member swap (ADL) ─────────────────────────────────────────────
