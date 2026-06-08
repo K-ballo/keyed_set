@@ -18,22 +18,22 @@ jobs:
           # ── Linux / GCC 14 ──
           - os: ubuntu-24.04
             compiler: gcc-14
-            preset: ci-gcc
+            preset: dev-gcc
 
           # ── Linux / Clang 18 ──
           - os: ubuntu-24.04
             compiler: clang-18+libc++
-            preset: ci-clang-libcxx
+            preset: dev-clang-libcxx
 
           # ── macOS 15 / AppleClang 16 ──
           - os: macos-15
             compiler: apple-clang-16
-            preset: ci-apple-clang
+            preset: dev-clang
 
           # ── Windows 2022 / MSVC (Ninja Multi-Config) ──
           - os: windows-2022
             compiler: msvc
-            preset: ci-msvc
+            preset: dev-msvc
 
     steps:
       - uses: actions/checkout@v5
@@ -61,7 +61,7 @@ jobs:
         run: cmake --preset ${{ matrix.preset }}
 
       - name: Build
-        run: cmake --build --preset ${{ matrix.preset }}
+        run: cmake --build --preset ${{ matrix.preset }}-debug
 
       - name: Test
-        run: ctest --preset ${{ matrix.preset }}
+        run: ctest --preset ${{ matrix.preset }}-debug

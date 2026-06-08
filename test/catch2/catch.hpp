@@ -956,6 +956,9 @@ namespace mpl_{
 }
 
 // end catch_meta.hpp
+
+#include <new>
+
 namespace Catch {
 
 template<typename C>
@@ -14587,6 +14590,8 @@ using TestCaseTracking::SectionTracker;
 #endif
 // end catch_test_case_tracker.cpp
 // start catch_test_registry.cpp
+
+#include <new>
 
 namespace Catch {
 
