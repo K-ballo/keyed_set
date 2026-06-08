@@ -1,82 +1,86 @@
+# Eggs.KeyedSet
+#
 # Copyright Agustin K-ballo Berge, Fusion Fenix 2026
 #
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
 # file LICENSE.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-# ── Vendored Catch2 v2 single-header ────────────────────────────────────────
+# ── Verify interface header sets ────────────────────────────────────────────
 
-add_library(_catch2 INTERFACE)
-target_include_directories(_catch2 SYSTEM INTERFACE
-    "${CMAKE_CURRENT_SOURCE_DIR}/catch")
-target_compile_definitions(_catch2 INTERFACE
-    CATCH_CONFIG_FAST_COMPILE)   # cuts per-TU overhead in v2
-
-# ── Shared test main (compiled once, linked into every test executable) ──────
-
-add_library(_eggs_keyed_set_test_main OBJECT
-    main.cpp)
-target_link_libraries(_eggs_keyed_set_test_main
-    PUBLIC
-        Eggs::KeyedSet
-        _catch2)
-set_target_properties(_eggs_keyed_set_test_main
-    PROPERTIES
-        FOLDER "test"
-        CXX_STANDARD 23
-        CXX_STANDARD_REQUIRED ON
-        CXX_EXTENSIONS OFF
-        CXX_SCAN_FOR_MODULES OFF)
-
-# ── One executable + one CTest per test source ───────────────────────────────
-
-set(_test_sources
-    types.cpp
-    cnstr.default.cpp
-    cnstr.compare.cpp
-    cnstr.range.cpp
-    cnstr.from_range.cpp
-    cnstr.init_list.cpp
-    cnstr.copy.cpp
-    cnstr.move.cpp
-    assign.copy.cpp
-    assign.move.cpp
-    assign.init_list.cpp
-    modif.emplace.cpp
-    modif.insert.cpp
-    modif.insert_range.cpp
-    modif.extract.cpp
-    modif.erase.cpp
-    modif.clear.cpp
-    modif.merge.cpp
-    lookup.find.cpp
-    lookup.count.cpp
-    lookup.contains.cpp
-    lookup.bounds.cpp
-    lookup.equal_range.cpp
-    observers.cpp
-    compare.cpp
-    allocator.cpp
-    swap.cpp
-    comparison.cpp
+add_test(
+    NAME eggs.keyed_set.verify_headers
+    COMMAND
+        ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target
+        _eggs_keyed_set_verify_interface_header_sets --config $<CONFIG>
+)
+set_tests_properties(
+    eggs.keyed_set.verify_headers
+    PROPERTIES LABELS "header" RESOURCE_LOCK cmake_build
 )
 
-foreach(_src IN LISTS _test_sources)
-    # Derive a target name from the filename: e.g. cnstr.default.cpp -> cnstr.default
-    get_filename_component(_name "${_src}" NAME_WLE)
-    set(_target "_eggs_keyed_set_test.${_name}")
+# ── Verify definitions in headers ──────────────────────────────────────────
 
-    add_executable(${_target} "${_src}")
-    target_link_libraries(${_target}
-        PRIVATE _eggs_keyed_set_test_main)
-    set_target_properties(${_target}
-        PROPERTIES
-            FOLDER "test"
-            CXX_STANDARD 23
-            CXX_STANDARD_REQUIRED ON
-            CXX_EXTENSIONS OFF
-            CXX_SCAN_FOR_MODULES OFF)
+include(AddMultipleDefinitionsTest)
 
-    add_test(
-        NAME "keyed_set.${_name}"
-        COMMAND ${_target})
-endforeach()
+add_multiple_definitions_test(eggs.keyed_set.verify_definitions Eggs::KeyedSet)
+set_target_properties(
+    eggs.keyed_set.verify_definitions
+    PROPERTIES FOLDER "header"
+)
+set_tests_properties(
+    eggs.keyed_set.verify_definitions
+    PROPERTIES LABELS "header" RESOURCE_LOCK cmake_build
+)
+
+# ── Vendored Catch2 v2 single-header ────────────────────────────────────────
+
+add_library(_catch2 OBJECT catch2/catch.cpp)
+target_link_libraries(_catch2 PUBLIC Eggs::KeyedSet)
+target_include_directories(
+    _catch2
+    SYSTEM
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/catch2"
+)
+target_compile_definitions(_catch2 INTERFACE CATCH_CONFIG_FAST_COMPILE)
+set_target_properties(_catch2 PROPERTIES FOLDER "test")
+
+# ── Tests ────────────────────────────────────────────────────────────────────
+
+# Helper — creates a test executable and registers it with CTest.
+function(add_lib_test name)
+    add_executable(_eggs_keyed_set_test.${name} ${name}.cpp)
+    target_link_libraries(_eggs_keyed_set_test.${name} PRIVATE _catch2)
+    set_target_properties(_eggs_keyed_set_test.${name} PROPERTIES FOLDER "test")
+
+    add_test(NAME eggs.keyed_set.${name} COMMAND _eggs_keyed_set_test.${name})
+    set_tests_properties(eggs.keyed_set.${name} PROPERTIES LABELS "unit")
+endfunction()
+
+add_lib_test(types)
+add_lib_test(cnstr.default)
+add_lib_test(cnstr.compare)
+add_lib_test(cnstr.range)
+add_lib_test(cnstr.from_range)
+add_lib_test(cnstr.init_list)
+add_lib_test(cnstr.copy)
+add_lib_test(cnstr.move)
+add_lib_test(assign.copy)
+add_lib_test(assign.move)
+add_lib_test(assign.init_list)
+add_lib_test(modif.emplace)
+add_lib_test(modif.insert)
+add_lib_test(modif.insert_range)
+add_lib_test(modif.extract)
+add_lib_test(modif.erase)
+add_lib_test(modif.clear)
+add_lib_test(modif.merge)
+add_lib_test(lookup.find)
+add_lib_test(lookup.count)
+add_lib_test(lookup.contains)
+add_lib_test(lookup.bounds)
+add_lib_test(lookup.equal_range)
+add_lib_test(observers)
+add_lib_test(compare)
+add_lib_test(allocator)
+add_lib_test(swap)
+add_lib_test(comparison)

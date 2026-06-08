@@ -1,90 +1,110 @@
+# Eggs.KeyedSet
+#
 # Copyright Agustin K-ballo Berge, Fusion Fenix 2026
 #
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
 # file LICENSE.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-cmake_minimum_required(VERSION 3.24...3.31)
+cmake_minimum_required(VERSION 3.25...4.2.3)
 
-project(Eggs.KeyedSet CXX)
+project(Eggs.KeyedSet DESCRIPTION "A C++23 keyed-set container" LANGUAGES CXX)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+include(GNUInstallDirs)
 
 # Options (two spellings: short when top-level, prefixed when a subdirectory)
 if(PROJECT_IS_TOP_LEVEL)
-    include(CTest)  # option(BUILD_TESTING ...)
-    option(BUILD_EXAMPLE "Build the example" ON)
-    option(ENABLE_INSTALL "Enable installing the library" ON)
+    set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+    set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+
+    option(BUILD_EXAMPLES "Build the examples" ON)
+    include(CTest) # option(BUILD_TESTING ...)
+    option(ENABLE_INSTALL "Generate install rules" ON)
+    set(SYSTEM OFF)
 else()
+    option(EGGS_KEYED_SET_BUILD_EXAMPLES "Build the examples" OFF)
     option(EGGS_KEYED_SET_BUILD_TESTING "Build the testing tree" OFF)
-    option(EGGS_KEYED_SET_BUILD_EXAMPLE "Build the example" OFF)
-    option(EGGS_KEYED_SET_ENABLE_INSTALL "Enable installing the library" OFF)
+    option(EGGS_KEYED_SET_ENABLE_INSTALL "Generate install rules" OFF)
 
     # Map prefixed options back to the canonical names used below
-    if(EGGS_KEYED_SET_BUILD_TESTING)
-        set(BUILD_TESTING ON)
-    endif()
-    if(EGGS_KEYED_SET_BUILD_EXAMPLE)
-        set(BUILD_EXAMPLE ON)
-    endif()
-    if(EGGS_KEYED_SET_ENABLE_INSTALL)
-        set(ENABLE_INSTALL ON)
-    endif()
+    set(BUILD_EXAMPLES ${EGGS_KEYED_SET_BUILD_EXAMPLES})
+    set(BUILD_TESTING ${EGGS_KEYED_SET_BUILD_TESTING})
+    set(ENABLE_INSTALL ${EGGS_KEYED_SET_ENABLE_INSTALL})
+    set(SYSTEM ON)
 endif()
 
-# Library target (header-only INTERFACE library)
+#
+# Library target — header-only INTERFACE library.
+# Internal name _eggs_keyed_set; downstream CMake code uses the alias Eggs::KeyedSet.
+#
 add_library(_eggs_keyed_set INTERFACE)
-target_include_directories(_eggs_keyed_set INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-target_compile_features(_eggs_keyed_set INTERFACE cxx_std_23)
-target_sources(_eggs_keyed_set INTERFACE
-    FILE_SET HEADERS
-    BASE_DIRS include
-    FILES include/eggs/keyed_set.hpp)
-set_target_properties(_eggs_keyed_set
+target_sources(
+    _eggs_keyed_set
+    INTERFACE
+        FILE_SET HEADERS BASE_DIRS include FILES include/eggs/keyed_set.hpp
+)
+set_target_properties(
+    _eggs_keyed_set
     PROPERTIES
-        EXPORT_NAME Eggs::KeyedSet
-        VERIFY_INTERFACE_HEADER_SETS ${BUILD_TESTING})
+        EXPORT_NAME KeyedSet
+        SYSTEM ${SYSTEM}
+        VERIFY_INTERFACE_HEADER_SETS ${BUILD_TESTING}
+)
+target_compile_features(_eggs_keyed_set INTERFACE cxx_std_23)
 
 add_library(Eggs::KeyedSet ALIAS _eggs_keyed_set)
 
-# Example
-if(BUILD_EXAMPLE)
+#
+# Examples
+#
+if(BUILD_EXAMPLES)
     add_subdirectory(example)
 endif()
 
-# Test
+#
+# Test suite
+#
 if(BUILD_TESTING)
     enable_testing()
     add_subdirectory(test)
 endif()
 
-# Install
+#
+# Install rules
+#
 if(ENABLE_INSTALL)
-    include(GNUInstallDirs)
     include(CMakePackageConfigHelpers)
 
-    install(TARGETS _eggs_keyed_set EXPORT _targets
-        FILE_SET HEADERS)
-    install(EXPORT _targets
+    install(
+        TARGETS _eggs_keyed_set
+        EXPORT EggsKeyedSetTargets
+        FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+
+    install(
+        EXPORT EggsKeyedSetTargets
         NAMESPACE Eggs::
-        FILE EggsKeyedSetTargets.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Eggs.KeyedSet)
+        FILE eggs.keyedset-targets.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/eggs.keyedset
+    )
 
     configure_package_config_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/EggsKeyedSetConfig.cmake.in
-        ${CMAKE_CURRENT_BINARY_DIR}/EggsKeyedSetConfig.cmake
-        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Eggs.KeyedSet)
+        cmake/eggs.keyedset-config.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/eggs.keyedset-config.cmake
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/eggs.keyedset
+    )
 
     write_basic_package_version_file(
-        ${CMAKE_CURRENT_BINARY_DIR}/EggsKeyedSetConfigVersion.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/eggs.keyedset-config-version.cmake
         VERSION 1.0.0
-        COMPATIBILITY SameMajorVersion)
+        COMPATIBILITY SameMajorVersion
+    )
 
-    install(FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/EggsKeyedSetConfig.cmake
-        ${CMAKE_CURRENT_BINARY_DIR}/EggsKeyedSetConfigVersion.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Eggs.KeyedSet)
+    install(
+        FILES
+            ${CMAKE_CURRENT_BINARY_DIR}/eggs.keyedset-config.cmake
+            ${CMAKE_CURRENT_BINARY_DIR}/eggs.keyedset-config-version.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/eggs.keyedset
+    )
 endif()
