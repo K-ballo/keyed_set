@@ -5,9 +5,8 @@
 
 #include <eggs/keyed_set.hpp>
 
-#include <catch.hpp>
-
 #include "fixture.hpp"
+#include <catch.hpp>
 
 using M = eggs::keyed_set<test::Employee, &test::Employee::id>;
 

@@ -5,9 +5,8 @@
 
 #include <eggs/keyed_set.hpp>
 
-#include <catch.hpp>
-
 #include "fixture.hpp"
+#include <catch.hpp>
 
 using M = eggs::keyed_set<test::Employee, &test::Employee::id>;
 
@@ -25,7 +24,9 @@ TEST_CASE("swap(keyed_set&) — member swap", "[keyed_set.swap]")
     CHECK(b.contains(2));
 }
 
-TEST_CASE("swap(keyed_set&, keyed_set&) — non-member ADL swap", "[keyed_set.swap]")
+TEST_CASE(
+    "swap(keyed_set&, keyed_set&) — non-member ADL swap", "[keyed_set.swap]"
+)
 {
     M a{{1, "Alice"}};
     M b{{2, "Bob"}, {3, "Carol"}};
@@ -59,8 +60,9 @@ TEST_CASE("swap — iterators remain valid after swap", "[keyed_set.swap]")
 // std::allocator<T> has propagate_on_container_swap = false but is always
 // equal, so swap is well-defined. We verify that swap works correctly when
 // both containers use the same allocator instance (the common case).
-TEST_CASE("swap — equal allocators, elements exchanged correctly",
-          "[keyed_set.swap]")
+TEST_CASE(
+    "swap — equal allocators, elements exchanged correctly", "[keyed_set.swap]"
+)
 {
     using M2 = eggs::keyed_set<test::Employee, &test::Employee::id>;
 
@@ -83,31 +85,47 @@ TEST_CASE("swap — equal allocators, elements exchanged correctly",
 template <typename T>
 struct swap_tracking_alloc
 {
-    using value_type                                = T;
-    using propagate_on_container_swap               = std::true_type;
-    using propagate_on_container_copy_assignment    = std::true_type;
-    using propagate_on_container_move_assignment    = std::true_type;
+    using value_type = T;
+    using propagate_on_container_swap = std::true_type;
+    using propagate_on_container_copy_assignment = std::true_type;
+    using propagate_on_container_move_assignment = std::true_type;
 
     int id;
-    explicit swap_tracking_alloc(int i) : id(i) {}
+
+    explicit swap_tracking_alloc(int i)
+        : id(i)
+    {
+    }
+
     template <typename U>
-    swap_tracking_alloc(swap_tracking_alloc<U> const& o) noexcept : id(o.id) {}
+    swap_tracking_alloc(swap_tracking_alloc<U> const& o) noexcept
+        : id(o.id)
+    {
+    }
 
-    T* allocate(std::size_t n)   { return std::allocator<T>{}.allocate(n);   }
+    T* allocate(std::size_t n) { return std::allocator<T>{}.allocate(n); }
+
     void deallocate(T* p, std::size_t n) noexcept
-    { std::allocator<T>{}.deallocate(p, n); }
+    {
+        std::allocator<T>{}.deallocate(p, n);
+    }
 
-    friend bool operator==(swap_tracking_alloc const& a,
-                           swap_tracking_alloc const& b) noexcept
-    { return a.id == b.id; }
+    friend bool operator==(
+        swap_tracking_alloc const& a, swap_tracking_alloc const& b
+    ) noexcept
+    {
+        return a.id == b.id;
+    }
 };
 
-TEST_CASE("swap — propagate_on_container_swap=true swaps allocators",
-          "[keyed_set.swap]")
+TEST_CASE(
+    "swap — propagate_on_container_swap=true swaps allocators",
+    "[keyed_set.swap]"
+)
 {
-    using A  = swap_tracking_alloc<test::Employee>;
-    using MS = eggs::keyed_set<test::Employee, &test::Employee::id,
-                               std::less<int>, A>;
+    using A = swap_tracking_alloc<test::Employee>;
+    using MS =
+        eggs::keyed_set<test::Employee, &test::Employee::id, std::less<int>, A>;
 
     MS a(A{1});
     a.insert({1, "Alice"});

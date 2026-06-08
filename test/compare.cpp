@@ -5,33 +5,34 @@
 
 #include <eggs/keyed_set.hpp>
 
-#include <catch.hpp>
-
-#include "fixture.hpp"
-
 #include <functional>
 #include <limits>
 #include <string>
 #include <type_traits>
 
+#include "fixture.hpp"
+#include <catch.hpp>
+
 // ── Default Compare = std::less<key_type> ───────────────────────────────────
 
 using Asc = eggs::keyed_set<test::Employee, &test::Employee::id>;
 
-TEST_CASE("keyed_set — default Compare is std::less<key_type>", "[keyed_set.compare]")
+TEST_CASE(
+    "keyed_set — default Compare is std::less<key_type>", "[keyed_set.compare]"
+)
 {
-    static_assert(std::is_same_v<
-        Asc::key_compare,
-        std::less<int>>);
+    static_assert(std::is_same_v<Asc::key_compare, std::less<int>>);
 }
 
-TEST_CASE("keyed_set — default Compare iterates in ascending order", "[keyed_set.compare]")
+TEST_CASE(
+    "keyed_set — default Compare iterates in ascending order",
+    "[keyed_set.compare]"
+)
 {
     Asc m{{3, "C"}, {1, "A"}, {2, "B"}};
 
     int prev = -1;
-    for (auto const& e : m)
-    {
+    for (auto const& e : m) {
         CHECK(e.id > prev);
         prev = e.id;
     }
@@ -39,15 +40,17 @@ TEST_CASE("keyed_set — default Compare iterates in ascending order", "[keyed_s
 
 // ── Custom Compare = std::greater<key_type> ──────────────────────────────────
 
-using Desc = eggs::keyed_set<test::Employee, &test::Employee::id, std::greater<int>>;
+using Desc =
+    eggs::keyed_set<test::Employee, &test::Employee::id, std::greater<int>>;
 
-TEST_CASE("keyed_set — std::greater<> yields descending order", "[keyed_set.compare]")
+TEST_CASE(
+    "keyed_set — std::greater<> yields descending order", "[keyed_set.compare]"
+)
 {
     Desc m{{3, "C"}, {1, "A"}, {2, "B"}};
 
     int prev = std::numeric_limits<int>::max();
-    for (auto const& e : m)
-    {
+    for (auto const& e : m) {
         CHECK(e.id < prev);
         prev = e.id;
     }
@@ -62,8 +65,10 @@ TEST_CASE("keyed_set — std::greater<> find by key_type", "[keyed_set.compare]"
     CHECK(it->name == "Bob");
 }
 
-TEST_CASE("keyed_set — std::greater<> lower_bound / upper_bound are reversed",
-          "[keyed_set.compare]")
+TEST_CASE(
+    "keyed_set — std::greater<> lower_bound / upper_bound are reversed",
+    "[keyed_set.compare]"
+)
 {
     Desc m{{1, "A"}, {2, "B"}, {3, "C"}};
 
@@ -82,8 +87,11 @@ TEST_CASE("keyed_set — std::greater<> lower_bound / upper_bound are reversed",
 
 // ── Transparent Compare ───────────────────────────────────────────────────────
 
-TEST_CASE("keyed_set — std::less<int> (non-transparent) key_compare has no is_transparent",
-          "[keyed_set.compare]")
+TEST_CASE(
+    "keyed_set — std::less<int> (non-transparent) key_compare has no "
+    "is_transparent",
+    "[keyed_set.compare]"
+)
 {
     // key_compare is Compare itself; std::less<int> is not transparent.
     static_assert(!test::transparent<Asc::key_compare>);
@@ -91,37 +99,47 @@ TEST_CASE("keyed_set — std::less<int> (non-transparent) key_compare has no is_
     static_assert(test::transparent<Asc::value_compare>);
 }
 
-TEST_CASE("keyed_set — std::less<void> (transparent) propagates is_transparent",
-          "[keyed_set.compare]")
+TEST_CASE(
+    "keyed_set — std::less<void> (transparent) propagates is_transparent",
+    "[keyed_set.compare]"
+)
 {
-    using Trans = eggs::keyed_set<test::Employee, &test::Employee::id, std::less<>>;
+    using Trans =
+        eggs::keyed_set<test::Employee, &test::Employee::id, std::less<>>;
     static_assert(test::transparent<Trans::key_compare>);
 }
 
 // ── key_comp() observer ──────────────────────────────────────────────────────
 
-TEST_CASE("keyed_set — key_comp() returns the Compare object",
-          "[keyed_set.compare]")
+TEST_CASE(
+    "keyed_set — key_comp() returns the Compare object", "[keyed_set.compare]"
+)
 {
     Desc m;
     auto cmp = m.key_comp();
     static_assert(std::is_same_v<decltype(cmp), std::greater<int>>);
-    CHECK(cmp(3, 2));   // 3 > 2
+    CHECK(cmp(3, 2)); // 3 > 2
     CHECK(!cmp(2, 3));
 }
 
 // ── String key with custom comparator ────────────────────────────────────────
 
-TEST_CASE("keyed_set — string key with case-insensitive comparator",
-          "[keyed_set.compare]")
+TEST_CASE(
+    "keyed_set — string key with case-insensitive comparator",
+    "[keyed_set.compare]"
+)
 {
-    struct ILess {
+    struct ILess
+    {
         using is_transparent = void;
+
         bool operator()(std::string const& a, std::string const& b) const
         {
             return std::lexicographical_compare(
-                a.begin(), a.end(), b.begin(), b.end(),
-                [](char x, char y){ return std::tolower(x) < std::tolower(y); });
+                a.begin(), a.end(), b.begin(), b.end(), [](char x, char y) {
+                    return std::tolower(x) < std::tolower(y);
+                }
+            );
         }
     };
 
@@ -133,23 +151,31 @@ TEST_CASE("keyed_set — string key with case-insensitive comparator",
 
     // Case-insensitive find
     CHECK(m.contains("SKU-A"));
-    CHECK(m.contains("sku-a"));   // same key under ILess
+    CHECK(m.contains("sku-a")); // same key under ILess
     CHECK(m.size() == 2u);
 }
 
 // ── Stateful comparator ───────────────────────────────────────────────────────
 
-TEST_CASE("keyed_set — stateful comparator is stored and accessible",
-          "[keyed_set.compare]")
+TEST_CASE(
+    "keyed_set — stateful comparator is stored and accessible",
+    "[keyed_set.compare]"
+)
 {
     struct ThresholdLess
     {
         int threshold;
-        explicit ThresholdLess(int t) : threshold(t) {}
+
+        explicit ThresholdLess(int t)
+            : threshold(t)
+        {
+        }
+
         bool operator()(int a, int b) const { return a < b; }
     };
 
-    using TM = eggs::keyed_set<test::Employee, &test::Employee::id, ThresholdLess>;
+    using TM =
+        eggs::keyed_set<test::Employee, &test::Employee::id, ThresholdLess>;
 
     ThresholdLess cmp(42);
     TM m(cmp);
@@ -161,13 +187,20 @@ TEST_CASE("keyed_set — stateful comparator is stored and accessible",
     CHECK(m.size() == 2u);
 }
 
-TEST_CASE("keyed_set — stateful comparator is copied with the container",
-          "[keyed_set.compare]")
+TEST_CASE(
+    "keyed_set — stateful comparator is copied with the container",
+    "[keyed_set.compare]"
+)
 {
     struct TaggedLess
     {
         int tag;
-        explicit TaggedLess(int t) : tag(t) {}
+
+        explicit TaggedLess(int t)
+            : tag(t)
+        {
+        }
+
         bool operator()(int a, int b) const { return a < b; }
     };
 
@@ -181,13 +214,20 @@ TEST_CASE("keyed_set — stateful comparator is copied with the container",
     CHECK(copy.size() == 1u);
 }
 
-TEST_CASE("keyed_set — stateful comparator is moved with the container",
-          "[keyed_set.compare]")
+TEST_CASE(
+    "keyed_set — stateful comparator is moved with the container",
+    "[keyed_set.compare]"
+)
 {
     struct TaggedLess
     {
         int tag;
-        explicit TaggedLess(int t) : tag(t) {}
+
+        explicit TaggedLess(int t)
+            : tag(t)
+        {
+        }
+
         bool operator()(int a, int b) const { return a < b; }
     };
 
@@ -210,28 +250,52 @@ struct compare_test_alloc
 {
     using value_type = T;
     int* count;
-    explicit compare_test_alloc(int& c) : count(&c) {}
+
+    explicit compare_test_alloc(int& c)
+        : count(&c)
+    {
+    }
+
     template <typename U>
-    compare_test_alloc(compare_test_alloc<U> const& o) noexcept : count(o.count) {}
+    compare_test_alloc(compare_test_alloc<U> const& o) noexcept
+        : count(o.count)
+    {
+    }
+
     T* allocate(std::size_t n)
-    { ++(*count); return std::allocator<T>{}.allocate(n); }
+    {
+        ++(*count);
+        return std::allocator<T>{}.allocate(n);
+    }
+
     void deallocate(T* p, std::size_t n) noexcept
-    { std::allocator<T>{}.deallocate(p, n); }
-    friend bool operator==(compare_test_alloc const& a,
-                           compare_test_alloc const& b) noexcept
-    { return a.count == b.count; }
+    {
+        std::allocator<T>{}.deallocate(p, n);
+    }
+
+    friend bool operator==(
+        compare_test_alloc const& a, compare_test_alloc const& b
+    ) noexcept
+    {
+        return a.count == b.count;
+    }
 };
 
-using CA = eggs::keyed_set<test::Employee, &test::Employee::id,
-                           std::greater<int>,
-                           compare_test_alloc<test::Employee>>;
+using CA = eggs::keyed_set<
+    test::Employee,
+    &test::Employee::id,
+    std::greater<int>,
+    compare_test_alloc<test::Employee>>;
 
-TEST_CASE("keyed_set — custom Compare and custom Allocator together",
-          "[keyed_set.compare]")
+TEST_CASE(
+    "keyed_set — custom Compare and custom Allocator together",
+    "[keyed_set.compare]"
+)
 {
     static_assert(std::is_same_v<CA::key_compare, std::greater<int>>);
-    static_assert(std::is_same_v<CA::allocator_type,
-                                 compare_test_alloc<test::Employee>>);
+    static_assert(
+        std::is_same_v<CA::allocator_type, compare_test_alloc<test::Employee>>
+    );
 
     int alloc_count = 0;
     CA m(std::greater<int>{}, compare_test_alloc<test::Employee>{alloc_count});
@@ -241,8 +305,7 @@ TEST_CASE("keyed_set — custom Compare and custom Allocator together",
 
     // Ordering is descending (greater<>)
     int prev = std::numeric_limits<int>::max();
-    for (auto const& e : m)
-    {
+    for (auto const& e : m) {
         CHECK(e.id < prev);
         prev = e.id;
     }

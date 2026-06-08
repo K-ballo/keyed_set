@@ -5,14 +5,14 @@
 
 #include <eggs/keyed_set.hpp>
 
-#include <catch.hpp>
-
 #include "fixture.hpp"
+#include <catch.hpp>
 
 TEST_CASE("clear() — postcondition: empty()", "[keyed_set.modif]")
 {
     eggs::keyed_set<test::Employee, &test::Employee::id> m{
-        {1, "Alice"}, {2, "Bob"}, {3, "Carol"}};
+        {1, "Alice"}, {2, "Bob"}, {3, "Carol"}
+    };
 
     m.clear();
 

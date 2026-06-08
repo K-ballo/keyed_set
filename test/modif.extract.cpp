@@ -5,13 +5,15 @@
 
 #include <eggs/keyed_set.hpp>
 
-#include <catch.hpp>
-
 #include "fixture.hpp"
+#include <catch.hpp>
 
 using M = eggs::keyed_set<test::Employee, &test::Employee::id>;
 
-TEST_CASE("extract(key_type const&) — removes and returns the node", "[keyed_set.modif]")
+TEST_CASE(
+    "extract(key_type const&) — removes and returns the node",
+    "[keyed_set.modif]"
+)
 {
     M m{{1, "Alice"}, {2, "Bob"}};
 
@@ -24,7 +26,10 @@ TEST_CASE("extract(key_type const&) — removes and returns the node", "[keyed_s
     CHECK(!m.contains(1));
 }
 
-TEST_CASE("extract(key_type const&) — missing key returns empty node", "[keyed_set.modif]")
+TEST_CASE(
+    "extract(key_type const&) — missing key returns empty node",
+    "[keyed_set.modif]"
+)
 {
     M m{{1, "Alice"}};
 
@@ -61,11 +66,13 @@ TEST_CASE("extract / re-insert round-trip — success", "[keyed_set.modif]")
     CHECK(pos->id == 5);
     CHECK(pos->name == "Eve");
     CHECK(dst.size() == 1u);
-    CHECK(node.empty());   // node handle consumed on success
+    CHECK(node.empty()); // node handle consumed on success
 }
 
-TEST_CASE("extract / re-insert round-trip — duplicate key not inserted",
-          "[keyed_set.modif]")
+TEST_CASE(
+    "extract / re-insert round-trip — duplicate key not inserted",
+    "[keyed_set.modif]"
+)
 {
     M src{{5, "Eve"}};
     M dst{{5, "Existing"}};
@@ -74,8 +81,8 @@ TEST_CASE("extract / re-insert round-trip — duplicate key not inserted",
     auto [pos, inserted, node] = dst.insert(std::move(nh));
 
     CHECK(!inserted);
-    CHECK(pos->name == "Existing");  // existing element untouched
-    CHECK(!node.empty());            // node handle returned unconsumed
+    CHECK(pos->name == "Existing"); // existing element untouched
+    CHECK(!node.empty());           // node handle returned unconsumed
     CHECK(node.value().id == 5);
     CHECK(node.value().name == "Eve");
     CHECK(dst.size() == 1u);
@@ -95,7 +102,9 @@ TEST_CASE("extract / re-insert with hint — success", "[keyed_set.modif]")
     CHECK(dst.contains(3));
 }
 
-TEST_CASE("extract preserves element value through node handle", "[keyed_set.modif]")
+TEST_CASE(
+    "extract preserves element value through node handle", "[keyed_set.modif]"
+)
 {
     M m{{42, "Answer"}};
     auto nh = m.extract(42);

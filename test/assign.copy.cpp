@@ -5,9 +5,8 @@
 
 #include <eggs/keyed_set.hpp>
 
-#include <catch.hpp>
-
 #include "fixture.hpp"
+#include <catch.hpp>
 
 using M = eggs::keyed_set<test::Employee, &test::Employee::id>;
 
@@ -32,7 +31,9 @@ TEST_CASE("operator=(keyed_set&&) — move assignment", "[keyed_set.assign]")
     CHECK(dst.contains(1));
 }
 
-TEST_CASE("operator=(initializer_list) — init-list assignment", "[keyed_set.assign]")
+TEST_CASE(
+    "operator=(initializer_list) — init-list assignment", "[keyed_set.assign]"
+)
 {
     M m{{1, "Old"}};
 

@@ -5,9 +5,8 @@
 
 #include <eggs/keyed_set.hpp>
 
-#include <catch.hpp>
-
 #include "fixture.hpp"
+#include <catch.hpp>
 
 TEST_CASE("keyed_set(il) — initializer-list constructor", "[keyed_set.cnstr]")
 {

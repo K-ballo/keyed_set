@@ -7,16 +7,18 @@
 
 #ifdef __cpp_lib_ranges_to_container
 
-#include <eggs/keyed_set.hpp>
+#    include <eggs/keyed_set.hpp>
 
-#include "fixture.hpp"
+#    include <ranges>
+#    include <vector>
 
-#include <ranges>
-#include <vector>
+#    include "fixture.hpp"
 
 using M = eggs::keyed_set<test::Employee, &test::Employee::id>;
 
-TEST_CASE("insert_range(rg) — inserts all elements from a range", "[keyed_set.modif]")
+TEST_CASE(
+    "insert_range(rg) — inserts all elements from a range", "[keyed_set.modif]"
+)
 {
     std::vector<test::Employee> src{{1, "A"}, {2, "B"}, {3, "C"}};
     M m;
@@ -38,23 +40,28 @@ TEST_CASE("insert_range(rg) — duplicate keys are ignored", "[keyed_set.modif]"
     CHECK(m.find(1)->name == "Existing");
 }
 
-TEST_CASE("insert_range(rg) — works with a transformed view", "[keyed_set.modif]")
+TEST_CASE(
+    "insert_range(rg) — works with a transformed view", "[keyed_set.modif]"
+)
 {
-    auto rng = std::views::iota(10, 14)
-             | std::views::transform([](int i) { return test::Employee{i, "e"}; });
+    auto rng = std::views::iota(10, 14) | std::views::transform([](int i) {
+                   return test::Employee{i, "e"};
+               });
     M m;
     m.insert_range(rng);
 
     CHECK(m.size() == 4u);
-    for (int i = 10; i < 14; ++i)
-        CHECK(m.contains(i));
+    for (int i = 10; i < 14; ++i) CHECK(m.contains(i));
 }
 
 #else
 
 TEST_CASE("insert_range — not available on this compiler", "[keyed_set.modif]")
 {
-    SUCCEED("__cpp_lib_ranges_to_container is not defined; insert_range tests skipped");
+    SUCCEED(
+        "__cpp_lib_ranges_to_container is not defined; insert_range tests "
+        "skipped"
+    );
 }
 
 #endif

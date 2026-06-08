@@ -7,12 +7,12 @@
 
 #ifdef __cpp_lib_ranges_to_container
 
-#include <eggs/keyed_set.hpp>
+#    include <eggs/keyed_set.hpp>
 
-#include "fixture.hpp"
+#    include <ranges>
+#    include <vector>
 
-#include <ranges>
-#include <vector>
+#    include "fixture.hpp"
 
 using M = eggs::keyed_set<test::Employee, &test::Employee::id>;
 
@@ -31,7 +31,9 @@ TEST_CASE("keyed_set(from_range, rg) — range constructor", "[keyed_set.cnstr]"
 TEST_CASE("keyed_set(from_range, rg) — works with views", "[keyed_set.cnstr]")
 {
     std::vector<test::Employee> src{{1, "A"}, {2, "B"}, {3, "C"}, {4, "D"}};
-    auto evens = src | std::views::filter([](test::Employee const& e){ return e.id % 2 == 0; });
+    auto evens = src | std::views::filter([](test::Employee const& e) {
+                     return e.id % 2 == 0;
+                 });
 
     M m(std::from_range, evens);
 
@@ -43,9 +45,14 @@ TEST_CASE("keyed_set(from_range, rg) — works with views", "[keyed_set.cnstr]")
 
 #else
 
-TEST_CASE("keyed_set(from_range) — not available on this compiler", "[keyed_set.cnstr]")
+TEST_CASE(
+    "keyed_set(from_range) — not available on this compiler",
+    "[keyed_set.cnstr]"
+)
 {
-    SUCCEED("__cpp_lib_ranges_to_container is not defined; from_range tests skipped");
+    SUCCEED(
+        "__cpp_lib_ranges_to_container is not defined; from_range tests skipped"
+    );
 }
 
 #endif

@@ -5,13 +5,14 @@
 
 #include <eggs/keyed_set.hpp>
 
-#include <catch.hpp>
-
 #include "fixture.hpp"
+#include <catch.hpp>
 
 using M = eggs::keyed_set<test::Employee, &test::Employee::id>;
 
-TEST_CASE("count(key_type const&) — present key returns 1", "[keyed_set.lookup]")
+TEST_CASE(
+    "count(key_type const&) — present key returns 1", "[keyed_set.lookup]"
+)
 {
     M m{{1, "Alice"}, {2, "Bob"}};
     CHECK(m.count(1) == 1u);

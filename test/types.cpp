@@ -5,12 +5,11 @@
 
 #include <eggs/keyed_set.hpp>
 
-#include <catch.hpp>
-
-#include "fixture.hpp"
-
 #include <iterator>
 #include <type_traits>
+
+#include "fixture.hpp"
+#include <catch.hpp>
 
 using M = eggs::keyed_set<test::Employee, &test::Employee::id>;
 
@@ -45,15 +44,25 @@ TEST_CASE("keyed_set — iterator is constant bidirectional", "[keyed_set.types]
     static_assert(std::bidirectional_iterator<M::iterator>);
     // Because iterator == const_iterator, all lookup and iteration functions
     // are const-qualified; there are no separate non-const overloads.
-    static_assert(std::is_const_v<std::remove_reference_t<decltype(*std::declval<M::iterator>())>>);
+    static_assert(
+        std::is_const_v<
+            std::remove_reference_t<decltype(*std::declval<M::iterator>())>>
+    );
 }
 
-TEST_CASE("keyed_set — reverse_iterator is constant bidirectional", "[keyed_set.types]")
+TEST_CASE(
+    "keyed_set — reverse_iterator is constant bidirectional",
+    "[keyed_set.types]"
+)
 {
-    static_assert(std::is_same_v<M::reverse_iterator, M::const_reverse_iterator>);
+    static_assert(
+        std::is_same_v<M::reverse_iterator, M::const_reverse_iterator>
+    );
 }
 
-TEST_CASE("keyed_set — node_type and insert_return_type exist", "[keyed_set.types]")
+TEST_CASE(
+    "keyed_set — node_type and insert_return_type exist", "[keyed_set.types]"
+)
 {
     static_assert(requires { typename M::node_type; });
     static_assert(requires { typename M::insert_return_type; });
