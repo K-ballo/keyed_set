@@ -16,16 +16,16 @@
 
 struct Employee
 {
-    int         id;
+    int id;
     std::string name;
-    double      salary;
+    double salary;
 };
 
 struct Product
 {
     std::string sku;
     std::string description;
-    double      price;
+    double price;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -36,8 +36,8 @@ int main()
     {
         eggs::keyed_set<Employee, &Employee::id> roster;
 
-        roster.insert({101, "Alice",  95'000.0});
-        roster.insert({102, "Bob",    80'000.0});
+        roster.insert({101, "Alice", 95'000.0});
+        roster.insert({102, "Bob", 80'000.0});
         roster.insert({103, "Carol", 110'000.0});
 
         // Heterogeneous lookup: find by int, no Employee construction needed
@@ -61,7 +61,7 @@ int main()
 
         catalogue.insert({"SKU-001", "Widget A", 9.99});
         catalogue.insert({"SKU-002", "Widget B", 14.99});
-        catalogue.insert({"SKU-003", "Gadget",   49.99});
+        catalogue.insert({"SKU-003", "Gadget", 49.99});
 
         assert(catalogue.contains("SKU-002"));
 
@@ -76,16 +76,19 @@ int main()
     // ── from_range constructor ───────────────────────────────────────────────
     {
         std::vector<Employee> all{
-            {1, "Dave",  70'000.0},
-            {2, "Eve",   90'000.0},
+            {1, "Dave", 70'000.0},
+            {2, "Eve", 90'000.0},
             {3, "Frank", 60'000.0},
             {4, "Grace", 95'000.0},
         };
 
-        auto high_earners = all
-            | std::views::filter([](Employee const& e){ return e.salary >= 90'000.0; });
+        auto high_earners = all | std::views::filter([](Employee const& e) {
+                                return e.salary >= 90'000.0;
+                            });
 
-        eggs::keyed_set<Employee, &Employee::id> top(std::from_range, high_earners);
+        eggs::keyed_set<Employee, &Employee::id> top(
+            std::from_range, high_earners
+        );
 
         assert(top.size() == 2);
         assert(top.contains(2));
@@ -96,8 +99,8 @@ int main()
     // ── Iterator-range constructor ───────────────────────────────────────────
     {
         std::vector<Employee> all{
-            {1, "Dave",  70'000.0},
-            {2, "Eve",   90'000.0},
+            {1, "Dave", 70'000.0},
+            {2, "Eve", 90'000.0},
             {3, "Frank", 60'000.0},
             {4, "Grace", 95'000.0},
         };
@@ -105,10 +108,11 @@ int main()
         // Filter into a temporary vector first (compatible with all C++23 compilers)
         std::vector<Employee> filtered;
         for (auto const& e : all)
-            if (e.salary >= 90'000.0)
-                filtered.push_back(e);
+            if (e.salary >= 90'000.0) filtered.push_back(e);
 
-        eggs::keyed_set<Employee, &Employee::id> top(filtered.begin(), filtered.end());
+        eggs::keyed_set<Employee, &Employee::id> top(
+            filtered.begin(), filtered.end()
+        );
 
         assert(top.size() == 2);
         assert(top.contains(2));
@@ -131,10 +135,9 @@ int main()
 
     // ── merge ────────────────────────────────────────────────────────────────
     {
-        eggs::keyed_set<Employee, &Employee::id> team_a{{1, "Ivan",  80'000.0}};
+        eggs::keyed_set<Employee, &Employee::id> team_a{{1, "Ivan", 80'000.0}};
         eggs::keyed_set<Employee, &Employee::id> team_b{
-            {2, "Judy",     85'000.0},
-            {1, "Conflict",  0.0}
+            {2, "Judy", 85'000.0}, {1, "Conflict", 0.0}
         };
 
         team_a.merge(team_b);
@@ -148,8 +151,8 @@ int main()
     {
         eggs::keyed_set<Employee, &Employee::id, std::greater<int>> desc;
 
-        desc.insert({1, "Alice",  95'000.0});
-        desc.insert({2, "Bob",    80'000.0});
+        desc.insert({1, "Alice", 95'000.0});
+        desc.insert({2, "Bob", 80'000.0});
         desc.insert({3, "Carol", 110'000.0});
 
         // Iteration is in descending key order
@@ -158,7 +161,7 @@ int main()
             std::cout << "  " << e.id << "  " << e.name << '\n';
 
         assert(desc.find(2)->name == "Bob");
-        assert(desc.key_comp()(3, 2));  // 3 > 2
+        assert(desc.key_comp()(3, 2)); // 3 > 2
     }
 
     std::cout << "All assertions passed.\n";

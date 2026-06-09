@@ -5,13 +5,14 @@
 
 #include <eggs/keyed_set.hpp>
 
-#include <catch.hpp>
-
 #include "fixture.hpp"
+#include <catch.hpp>
 
 using M = eggs::keyed_set<test::Employee, &test::Employee::id>;
 
-TEST_CASE("find(key_type const&) — returns iterator to element", "[keyed_set.lookup]")
+TEST_CASE(
+    "find(key_type const&) — returns iterator to element", "[keyed_set.lookup]"
+)
 {
     M m{{1, "Alice"}, {2, "Bob"}};
 
@@ -20,7 +21,9 @@ TEST_CASE("find(key_type const&) — returns iterator to element", "[keyed_set.l
     CHECK(it->name == "Alice");
 }
 
-TEST_CASE("find(key_type const&) — missing key returns end()", "[keyed_set.lookup]")
+TEST_CASE(
+    "find(key_type const&) — missing key returns end()", "[keyed_set.lookup]"
+)
 {
     M m{{1, "Alice"}};
 
@@ -36,8 +39,10 @@ TEST_CASE("find(key_type const&) const — const overload", "[keyed_set.lookup]"
     CHECK(it->name == "Alice");
 }
 
-TEST_CASE("find(K const&) — transparent lookup, no key_type construction",
-          "[keyed_set.lookup]")
+TEST_CASE(
+    "find(K const&) — transparent lookup, no key_type construction",
+    "[keyed_set.lookup]"
+)
 {
     // Pass a long; the comparator's is_transparent allows this without
     // constructing an int.
@@ -53,8 +58,7 @@ TEST_CASE("find — iterating in key order", "[keyed_set.lookup]")
     M m{{3, "C"}, {1, "A"}, {2, "B"}};
 
     int prev = -1;
-    for (auto const& e : m)
-    {
+    for (auto const& e : m) {
         CHECK(e.id > prev);
         prev = e.id;
     }

@@ -5,9 +5,8 @@
 
 #include <eggs/keyed_set.hpp>
 
-#include <catch.hpp>
-
 #include "fixture.hpp"
+#include <catch.hpp>
 
 using M = eggs::keyed_set<test::Employee, &test::Employee::id>;
 
@@ -33,6 +32,5 @@ TEST_CASE("contains(K const&) — transparent overload", "[keyed_set.lookup]")
 TEST_CASE("contains — equivalent to find() != end()", "[keyed_set.lookup]")
 {
     M m{{3, "C"}, {4, "D"}};
-    for (int k : {3, 4, 5})
-        CHECK(m.contains(k) == (m.find(k) != m.end()));
+    for (int k : {3, 4, 5}) CHECK(m.contains(k) == (m.find(k) != m.end()));
 }

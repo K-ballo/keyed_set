@@ -5,16 +5,18 @@
 
 #include <eggs/keyed_set.hpp>
 
-#include <catch.hpp>
-
-#include "fixture.hpp"
-
 #include <algorithm>
 #include <vector>
 
+#include "fixture.hpp"
+#include <catch.hpp>
+
 using M = eggs::keyed_set<test::Employee, &test::Employee::id>;
 
-TEST_CASE("merge(keyed_set&) — transfers non-conflicting elements", "[keyed_set.modif]")
+TEST_CASE(
+    "merge(keyed_set&) — transfers non-conflicting elements",
+    "[keyed_set.modif]"
+)
 {
     M a{{1, "Alice"}, {2, "Bob"}};
     M b{{3, "Carol"}, {4, "Dave"}};
@@ -25,7 +27,9 @@ TEST_CASE("merge(keyed_set&) — transfers non-conflicting elements", "[keyed_se
     CHECK(b.empty());
 }
 
-TEST_CASE("merge(keyed_set&) — duplicate keys stay in source", "[keyed_set.modif]")
+TEST_CASE(
+    "merge(keyed_set&) — duplicate keys stay in source", "[keyed_set.modif]"
+)
 {
     M a{{1, "Alice"}, {2, "Bob"}};
     M b{{2, "Bob-dup"}, {3, "Carol"}};
@@ -36,10 +40,13 @@ TEST_CASE("merge(keyed_set&) — duplicate keys stay in source", "[keyed_set.mod
     CHECK(a.size() == 3u);
     CHECK(b.size() == 1u);
     CHECK(b.contains(2));
-    CHECK(a.find(2)->name == "Bob");  // original untouched
+    CHECK(a.find(2)->name == "Bob"); // original untouched
 }
 
-TEST_CASE("merge(keyed_set&) — all keys conflict, source unchanged", "[keyed_set.modif]")
+TEST_CASE(
+    "merge(keyed_set&) — all keys conflict, source unchanged",
+    "[keyed_set.modif]"
+)
 {
     M a{{1, "A"}, {2, "B"}, {3, "C"}};
     M b{{1, "X"}, {2, "Y"}, {3, "Z"}};
@@ -47,15 +54,17 @@ TEST_CASE("merge(keyed_set&) — all keys conflict, source unchanged", "[keyed_s
     a.merge(b);
 
     CHECK(a.size() == 3u);
-    CHECK(b.size() == 3u);  // nothing moved
+    CHECK(b.size() == 3u); // nothing moved
     // destination values unchanged
     CHECK(a.find(1)->name == "A");
     CHECK(a.find(2)->name == "B");
     CHECK(a.find(3)->name == "C");
 }
 
-TEST_CASE("merge(keyed_set&) — source becomes empty when no conflicts",
-          "[keyed_set.modif]")
+TEST_CASE(
+    "merge(keyed_set&) — source becomes empty when no conflicts",
+    "[keyed_set.modif]"
+)
 {
     M a;
     M b{{1, "A"}, {2, "B"}, {3, "C"}};
@@ -84,15 +93,15 @@ TEST_CASE("merge — result is still ordered", "[keyed_set.modif]")
     a.merge(b);
 
     std::vector<int> ids;
-    for (auto const& e : a)
-        ids.push_back(e.id);
+    for (auto const& e : a) ids.push_back(e.id);
 
     CHECK(std::is_sorted(ids.begin(), ids.end()));
     CHECK(ids == std::vector<int>{1, 2, 3, 4, 5});
 }
 
-TEST_CASE("merge — pointers to transferred elements remain valid",
-          "[keyed_set.modif]")
+TEST_CASE(
+    "merge — pointers to transferred elements remain valid", "[keyed_set.modif]"
+)
 {
     M a{{1, "Alice"}};
     M b{{2, "Bob"}};
@@ -107,8 +116,10 @@ TEST_CASE("merge — pointers to transferred elements remain valid",
     CHECK(ptr->name == "Bob");
 }
 
-TEST_CASE("merge — iterators to transferred elements remain valid",
-          "[keyed_set.modif]")
+TEST_CASE(
+    "merge — iterators to transferred elements remain valid",
+    "[keyed_set.modif]"
+)
 {
     M a{{1, "Alice"}};
     M b{{2, "Bob"}, {3, "Carol"}};
@@ -130,8 +141,10 @@ TEST_CASE("merge — iterators to transferred elements remain valid",
     CHECK(a.contains(3));
 }
 
-TEST_CASE("merge — partial transfer preserves order in both containers",
-          "[keyed_set.modif]")
+TEST_CASE(
+    "merge — partial transfer preserves order in both containers",
+    "[keyed_set.modif]"
+)
 {
     M a{{1, "A"}, {3, "C"}, {5, "E"}};
     M b{{2, "B"}, {3, "C-dup"}, {4, "D"}};

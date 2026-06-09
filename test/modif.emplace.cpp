@@ -5,9 +5,8 @@
 
 #include <eggs/keyed_set.hpp>
 
-#include <catch.hpp>
-
 #include "fixture.hpp"
+#include <catch.hpp>
 
 using M = eggs::keyed_set<test::Employee, &test::Employee::id>;
 
@@ -31,8 +30,10 @@ TEST_CASE("emplace() — duplicate key is rejected", "[keyed_set.modif]")
     CHECK(m.size() == 1u);
 }
 
-TEST_CASE("emplace() — returned iterator points to existing element on failure",
-          "[keyed_set.modif]")
+TEST_CASE(
+    "emplace() — returned iterator points to existing element on failure",
+    "[keyed_set.modif]"
+)
 {
     M m{{1, "Alice"}, {2, "Bob"}};
 
@@ -62,8 +63,10 @@ TEST_CASE("emplace_hint() — correct hint at begin()", "[keyed_set.modif]")
     CHECK(m.size() == 3u);
 }
 
-TEST_CASE("emplace_hint() — wrong hint still produces correct result",
-          "[keyed_set.modif]")
+TEST_CASE(
+    "emplace_hint() — wrong hint still produces correct result",
+    "[keyed_set.modif]"
+)
 {
     M m{{1, "Alice"}, {2, "Bob"}, {3, "Carol"}};
 
@@ -74,21 +77,22 @@ TEST_CASE("emplace_hint() — wrong hint still produces correct result",
     CHECK(m.size() == 4u);
     // Container must still be ordered correctly
     int prev = -1;
-    for (auto const& e : m)
-    {
+    for (auto const& e : m) {
         CHECK(e.id > prev);
         prev = e.id;
     }
 }
 
-TEST_CASE("emplace_hint() — duplicate key with any hint is rejected",
-          "[keyed_set.modif]")
+TEST_CASE(
+    "emplace_hint() — duplicate key with any hint is rejected",
+    "[keyed_set.modif]"
+)
 {
     M m{{1, "Alice"}, {2, "Bob"}};
 
     // Wrong hint (end), duplicate key
     auto it = m.emplace_hint(m.end(), test::Employee{1, "Duplicate"});
 
-    CHECK(it->name == "Alice");  // existing element
+    CHECK(it->name == "Alice"); // existing element
     CHECK(m.size() == 2u);
 }

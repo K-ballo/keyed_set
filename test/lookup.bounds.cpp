@@ -5,14 +5,15 @@
 
 #include <eggs/keyed_set.hpp>
 
-#include <catch.hpp>
-
 #include "fixture.hpp"
+#include <catch.hpp>
 
 using M = eggs::keyed_set<test::Employee, &test::Employee::id>;
 
-TEST_CASE("lower_bound(key_type const&) — first element not less than k",
-          "[keyed_set.lookup]")
+TEST_CASE(
+    "lower_bound(key_type const&) — first element not less than k",
+    "[keyed_set.lookup]"
+)
 {
     M m{{1, "A"}, {3, "C"}, {5, "E"}};
 
@@ -21,7 +22,9 @@ TEST_CASE("lower_bound(key_type const&) — first element not less than k",
     CHECK(it->id == 3);
 }
 
-TEST_CASE("lower_bound(key_type const&) — between elements", "[keyed_set.lookup]")
+TEST_CASE(
+    "lower_bound(key_type const&) — between elements", "[keyed_set.lookup]"
+)
 {
     M m{{1, "A"}, {3, "C"}, {5, "E"}};
 
@@ -30,15 +33,19 @@ TEST_CASE("lower_bound(key_type const&) — between elements", "[keyed_set.looku
     CHECK(it->id == 3);
 }
 
-TEST_CASE("lower_bound(key_type const&) — past last returns end()",
-          "[keyed_set.lookup]")
+TEST_CASE(
+    "lower_bound(key_type const&) — past last returns end()",
+    "[keyed_set.lookup]"
+)
 {
     M m{{1, "A"}, {3, "C"}};
     CHECK(m.lower_bound(99) == m.end());
 }
 
-TEST_CASE("upper_bound(key_type const&) — first element greater than k",
-          "[keyed_set.lookup]")
+TEST_CASE(
+    "upper_bound(key_type const&) — first element greater than k",
+    "[keyed_set.lookup]"
+)
 {
     M m{{1, "A"}, {3, "C"}, {5, "E"}};
 
@@ -47,14 +54,18 @@ TEST_CASE("upper_bound(key_type const&) — first element greater than k",
     CHECK(it->id == 5);
 }
 
-TEST_CASE("upper_bound(key_type const&) — past last returns end()",
-          "[keyed_set.lookup]")
+TEST_CASE(
+    "upper_bound(key_type const&) — past last returns end()",
+    "[keyed_set.lookup]"
+)
 {
     M m{{1, "A"}, {3, "C"}};
     CHECK(m.upper_bound(99) == m.end());
 }
 
-TEST_CASE("lower_bound / upper_bound — transparent overloads", "[keyed_set.lookup]")
+TEST_CASE(
+    "lower_bound / upper_bound — transparent overloads", "[keyed_set.lookup]"
+)
 {
     M m{{10, "X"}, {20, "Y"}, {30, "Z"}};
 

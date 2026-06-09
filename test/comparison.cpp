@@ -5,11 +5,10 @@
 
 #include <eggs/keyed_set.hpp>
 
-#include <catch.hpp>
+#include <compare>
 
 #include "fixture.hpp"
-
-#include <compare>
+#include <catch.hpp>
 
 using M = eggs::keyed_set<test::Employee, &test::Employee::id>;
 
@@ -61,38 +60,41 @@ TEST_CASE("operator<= / >= / < / > — synthesised from <=>", "[keyed_set.cmp]")
     CHECK(!(b < a));
 }
 
-namespace
+namespace {
+struct Priority
 {
-    struct Priority
+    int value;
+
+    friend std::weak_ordering operator<=>(Priority const& a, Priority const& b)
     {
-        int value;
+        bool a_neg = a.value < 0;
+        bool b_neg = b.value < 0;
+        if (a_neg && b_neg) return std::weak_ordering::equivalent;
+        return a.value <=> b.value;
+    }
+};
 
-        friend std::weak_ordering operator<=>(Priority const& a, Priority const& b)
-        {
-            bool a_neg = a.value < 0;
-            bool b_neg = b.value < 0;
-            if (a_neg && b_neg) return std::weak_ordering::equivalent;
-            return a.value <=> b.value;
-        }
-    };
+struct Task
+{
+    Priority priority;
+    std::string name;
 
-    struct Task {
-        Priority priority;
-        std::string name;
-
-        friend std::weak_ordering operator<=>(Task const& a, Task const& b)
-        {
-            if (auto c = a.priority <=> b.priority; c != 0) return c;
-            return std::weak_ordering(a.name <=> b.name);
-        }
-    };
-}
+    friend std::weak_ordering operator<=>(Task const& a, Task const& b)
+    {
+        if (auto c = a.priority <=> b.priority; c != 0) return c;
+        return std::weak_ordering(a.name <=> b.name);
+    }
+};
+} // namespace
 
 TEST_CASE("operator<=> — weak_ordering key type", "[keyed_set.cmp]")
 {
-    struct PriorityLess {
+    struct PriorityLess
+    {
         bool operator()(Priority const& a, Priority const& b) const
-        { return std::is_lt(a <=> b); }
+        {
+            return std::is_lt(a <=> b);
+        }
     };
 
     using TM = eggs::keyed_set<Task, &Task::priority, PriorityLess>;
@@ -106,16 +108,20 @@ TEST_CASE("operator<=> — weak_ordering key type", "[keyed_set.cmp]")
     CHECK(std::is_eq(a <=> c));
 }
 
-TEST_CASE("operator== — same keys different values are not equal", "[keyed_set.cmp]")
+TEST_CASE(
+    "operator== — same keys different values are not equal", "[keyed_set.cmp]"
+)
 {
     M a{{1, "Alice"}};
-    M b{{1, "Bob"}};   // same key, different name
+    M b{{1, "Bob"}}; // same key, different name
     CHECK(!(a == b));
 }
 
-TEST_CASE("operator<=> — full value comparison, not just key", "[keyed_set.cmp]")
+TEST_CASE(
+    "operator<=> — full value comparison, not just key", "[keyed_set.cmp]"
+)
 {
     M a{{1, "Alice"}};
-    M b{{1, "Bob"}};   // same key, "Alice" < "Bob" lexicographically
+    M b{{1, "Bob"}}; // same key, "Alice" < "Bob" lexicographically
     CHECK(std::is_lt(a <=> b));
 }

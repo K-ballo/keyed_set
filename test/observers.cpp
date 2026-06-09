@@ -5,12 +5,11 @@
 
 #include <eggs/keyed_set.hpp>
 
-#include <catch.hpp>
-
-#include "fixture.hpp"
-
 #include <functional>
 #include <type_traits>
+
+#include "fixture.hpp"
+#include <catch.hpp>
 
 using M = eggs::keyed_set<test::Employee, &test::Employee::id>;
 
@@ -29,8 +28,10 @@ TEST_CASE("key_comp() — returns the Compare object", "[keyed_set.obs]")
     CHECK(!cmp(1, 1));
 }
 
-TEST_CASE("value_comp() — returns the projecting comparator over value_type",
-          "[keyed_set.obs]")
+TEST_CASE(
+    "value_comp() — returns the projecting comparator over value_type",
+    "[keyed_set.obs]"
+)
 {
     M m;
 
@@ -46,14 +47,17 @@ TEST_CASE("value_comp() — returns the projecting comparator over value_type",
     CHECK(!vc(a, a));
 }
 
-TEST_CASE("key_compare::is_transparent — present only when Compare is transparent",
-          "[keyed_set.obs]")
+TEST_CASE(
+    "key_compare::is_transparent — present only when Compare is transparent",
+    "[keyed_set.obs]"
+)
 {
     // std::less<int> is not transparent
     static_assert(!test::transparent<M::key_compare>);
 
     // std::less<> is transparent
-    using Trans = eggs::keyed_set<test::Employee, &test::Employee::id, std::less<>>;
+    using Trans =
+        eggs::keyed_set<test::Employee, &test::Employee::id, std::less<>>;
     static_assert(test::transparent<Trans::key_compare>);
 }
 
