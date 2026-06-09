@@ -660,6 +660,30 @@ class keyed_set
     _set_type set_;
 };
 
+///////////////////////////////////////////////////////////////////////////
+//! Fn erase_if
+//!
+//! Erases all elements from `c` for which `pred` returns `true`.
+//! ([associative.reqmts.general] / erase_if)
+template <
+    typename Value,
+    auto Key,
+    typename Compare,
+    typename Allocator,
+    typename Predicate>
+typename keyed_set<Value, Key, Compare, Allocator>::size_type
+erase_if(keyed_set<Value, Key, Compare, Allocator>& c, Predicate pred)
+{
+    auto original_size = c.size();
+    for (auto it = c.begin(); it != c.end();) {
+        if (pred(*it))
+            it = c.erase(it);
+        else
+            ++it;
+    }
+    return original_size - c.size();
+}
+
 } // namespace eggs
 
 #endif // EGGS_KEYED_SET_HPP

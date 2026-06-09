@@ -132,6 +132,7 @@ interfering.
 - `extract` (by iterator, by key, transparent)
 - `erase` (by key, transparent, by iterator, by range)
 - `clear`, `merge`
+- `erase_if(keyed_set&, Predicate)` (free function)
 - `key_comp`, `value_comp`
 - `find`, `count`, `contains`, `lower_bound`, `upper_bound`, `equal_range`
   — all with both exact and transparent (`K const&`) overloads
