@@ -15,7 +15,12 @@ See the library header at
 ```cpp
 namespace eggs
 {
-    template <typename Value, auto Value::*Key>
+    template <
+        typename Value,
+        auto     Key,
+        typename Compare   = std::less<key-type>,
+        typename Allocator = std::allocator<Value>
+    >
     class keyed_set;
 }
 ```
@@ -54,11 +59,12 @@ eggs::keyed_set<Employee, &Employee::id> from_vec(std::from_range, vec);
 ## Requirements
 
 The library requires a C++23-conformant compiler and standard library.
-It has been tested with:
+It is continuously tested with:
 
-- GCC 14+
-- Clang 17+ (with libc++ or libstdc++)
-- MSVC 19.38+ (VS 2022 17.8+)
+- GCC 14 and 16
+- Clang 18 and 22 (libstdc++ and libc++)
+- MSVC 2022 and 2026
+- Clang-CL 20 (Windows)
 
 There are no external dependencies.
 
@@ -82,55 +88,32 @@ target_link_libraries(my_target PRIVATE Eggs::KeyedSet)
 | Option (top-level) | Option (subdirectory) | Default | Description |
 |---|---|---|---|
 | `BUILD_TESTING` | `EGGS_KEYED_SET_BUILD_TESTING` | `ON` / `OFF` | Build the test suite |
-| `BUILD_EXAMPLE` | `EGGS_KEYED_SET_BUILD_EXAMPLE` | `ON` / `OFF` | Build the example |
+| `BUILD_EXAMPLES` | `EGGS_KEYED_SET_BUILD_EXAMPLES` | `ON` / `OFF` | Build the examples |
 | `ENABLE_INSTALL` | `EGGS_KEYED_SET_ENABLE_INSTALL` | `ON` / `OFF` | Install the library |
 
 ### Configuring and building with presets
 
 The project ships a `CMakePresets.json` with named configurations for the
-most common workflows. CMake 3.23 or later is required to use presets.
+most common workflows. CMake 3.25 or later is required to use presets.
 
 ```sh
 # List all available presets
 cmake --list-presets
 
-# Configure + build + test in one go (system compiler, Debug)
-cmake --preset dev
-cmake --build --preset dev
-ctest --preset dev
+# Configure, build, and test (GCC, Debug)
+cmake --preset dev-gcc
+cmake --build --preset dev-gcc-debug
+ctest --preset dev-gcc-debug
 
-# Explicit toolchain variants
-cmake --preset dev-gcc    && cmake --build --preset dev-gcc    && ctest --preset dev-gcc
-cmake --preset dev-clang  && cmake --build --preset dev-clang  && ctest --preset dev-clang
-
-# Release build
-cmake --preset release-gcc && cmake --build --preset release-gcc
-
-# Address + UB sanitizers
-cmake --preset asan && cmake --build --preset asan && ctest --preset asan
-
-# Thread sanitizer
-cmake --preset tsan && cmake --build --preset tsan && ctest --preset tsan
-
-# Visual Studio 2022 (multi-config)
-cmake --preset vs2022
-cmake --build --preset vs2022-debug
-ctest --preset vs2022
+# Other toolchain variants
+cmake --preset dev-clang         # Clang with libstdc++
+cmake --preset dev-clang-libcxx  # Clang with libc++
+cmake --preset dev-msvc          # MSVC x64
+cmake --preset dev-clang-cl      # Clang-CL x64
 ```
 
 Build trees land in `build/<preset-name>/` so all presets coexist without
 interfering.
-
-#### Local overrides
-
-Copy the provided `CMakeUserPresets.json` template (it is `.gitignore`d)
-to point at a specific compiler installation, set a custom install prefix,
-or wire in a vcpkg / Conan toolchain:
-
-```sh
-# Example: use a locally built GCC 15
-cmake --preset dev-gcc15   # defined only in your CMakeUserPresets.json
-```
 
 ## C++26 AssociativeContainer conformance
 
