@@ -203,6 +203,20 @@ jobs:
                --no-compress-output
                --output-junit test-results-${{ matrix.compiler }}-release-example.xml
 
+      - name: Package
+        working-directory: build/${{ matrix.preset }}
+        run: cpack -C Release
+
+      - name: Upload package
+        uses: actions/upload-artifact@v6
+        with:
+          name: package-${{ matrix.compiler }}
+          path: |
+            build/${{ matrix.preset }}/Eggs.KeyedSet-*.tar.gz
+            build/${{ matrix.preset }}/Eggs.KeyedSet-*.zip
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v6
@@ -274,18 +288,6 @@ jobs:
         run: cmake --install build/${{ matrix.preset }}
                --prefix ${{ runner.temp }}/eggs-keyed_set-install
                --config Release
-
-      - name: Upload installed package
-        if: >-
-          github.ref == 'refs/heads/main'
-          && steps.install_debug.outcome == 'success'
-          && steps.install_release.outcome == 'success'
-        uses: actions/upload-artifact@v6
-        with:
-          name: installed-package-${{ matrix.compiler }}
-          path: ${{ runner.temp }}/eggs-keyed_set-install
-          if-no-files-found: error
-          retention-days: 7
 
       - name: Clean Source and Build Tree
         if: github.ref == 'refs/heads/main'
