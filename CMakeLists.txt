@@ -18,16 +18,19 @@ if(PROJECT_IS_TOP_LEVEL)
     set_property(GLOBAL PROPERTY USE_FOLDERS ON)
     set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
+    option(BUILD_DOCS "Build the documentation" ON)
     option(BUILD_EXAMPLES "Build the examples" ON)
     include(CTest) # option(BUILD_TESTING ...)
     option(ENABLE_INSTALL "Generate install rules" ON)
     set(SYSTEM OFF)
 else()
+    option(EGGS_KEYED_SET_BUILD_DOCS "Build the documentation" OFF)
     option(EGGS_KEYED_SET_BUILD_EXAMPLES "Build the examples" OFF)
     option(EGGS_KEYED_SET_BUILD_TESTING "Build the testing tree" OFF)
     option(EGGS_KEYED_SET_ENABLE_INSTALL "Generate install rules" OFF)
 
     # Map prefixed options back to the canonical names used below
+    set(BUILD_DOCS ${EGGS_KEYED_SET_BUILD_DOCS})
     set(BUILD_EXAMPLES ${EGGS_KEYED_SET_BUILD_EXAMPLES})
     set(BUILD_TESTING ${EGGS_KEYED_SET_BUILD_TESTING})
     set(ENABLE_INSTALL ${EGGS_KEYED_SET_ENABLE_INSTALL})
@@ -54,6 +57,13 @@ set_target_properties(
 target_compile_features(_eggs_keyed_set INTERFACE cxx_std_23)
 
 add_library(Eggs::KeyedSet ALIAS _eggs_keyed_set)
+
+#
+# Documentation
+#
+if(BUILD_DOCS)
+    add_subdirectory(docs)
+endif()
 
 #
 # Examples
